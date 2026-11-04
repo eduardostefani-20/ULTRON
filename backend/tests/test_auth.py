@@ -61,3 +61,13 @@ async def test_change_password_revokes_sessions(client, auth, headers):
                           json={"current_password": "Senha-Forte-2026", "new_password": "Outra-Senha-2027"})
     assert r.status_code == 200
     assert (await client.post("/api/auth/refresh", json={"refresh_token": auth["_refresh"]})).status_code == 401
+
+
+async def test_admin_password_reset(client, auth):
+    from ultron.admin import reset_password
+
+    assert "pelo menos" in await reset_password("dono@ultron.dev", "curta")
+    assert "redefinida" in await reset_password("dono@ultron.dev", "Nova-Senha-Forte-1")
+    r = await client.post("/api/auth/login", json={"email": "dono@ultron.dev", "password": "Nova-Senha-Forte-1"})
+    assert r.status_code == 200
+    assert (await client.post("/api/auth/refresh", json={"refresh_token": auth["_refresh"]})).status_code == 401
