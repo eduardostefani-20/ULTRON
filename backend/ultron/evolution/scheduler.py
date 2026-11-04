@@ -109,10 +109,11 @@ async def job_cache_purge() -> str:
 
 
 async def job_publication_monitor() -> str:
-    from ultron.evolution.publisher import monitor
+    from ultron.evolution.publisher import monitor, retry_approved
 
     res = await monitor()
-    return f"{len(res)} publicação(ões) monitoradas"
+    retried = await retry_approved()
+    return f"{len(res)} publicação(ões) monitoradas; {len(retried)} aprovação(ões) pendentes de publicação tentadas"
 
 
 async def job_api_metrics() -> str:

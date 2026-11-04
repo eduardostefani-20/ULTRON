@@ -264,6 +264,16 @@ async def develop_proposal(pid: str, user: User = Depends(owner), session: Async
     return {"ok": True, "message": "desenvolvimento iniciado em segundo plano"}
 
 
+@router.post("/evolution/proposals/{pid}/publish")
+async def publish_now(pid: str, user: User = Depends(owner)):
+    """Tenta publicar agora uma proposta já aprovada (ex.: após o CI do GitHub ficar verde)."""
+    try:
+        pub = await publish(pid, mode="approved", approved_by=f"user:{user.id}")
+    except PublishError as e:
+        raise HTTPException(400, str(e))
+    return row(pub)
+
+
 @router.post("/evolution/proposals/{pid}/reject")
 async def reject_proposal(pid: str, user: User = Depends(owner), session: AsyncSession = Depends(get_session)):
     p = await session.get(Proposal, pid)

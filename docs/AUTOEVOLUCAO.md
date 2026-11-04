@@ -29,6 +29,10 @@ número de propostas e de desenvolvimentos por ciclo.
 | **Alto** | autenticação, credenciais, permissões, dependências, infraestrutura, migrações, código com subprocessos/eval/rede/segredos | aprovação humana obrigatória **com senha** |
 | **Protegido** | governança, segurança, sandbox, avaliação, publicação, orçamento, CI, testes de segurança | **nenhum agente altera** — só humanos, direto no repositório |
 
+Com GitHub configurado, cada proposta que aguarda aprovação vira um PR. **Aprove pelo app do
+ULTRON** (o PR serve para revisar o código, inclusive pelo app do GitHub). Se você aprovar antes de o
+CI terminar, o ULTRON tenta publicar de novo sozinho a cada 10 minutos — ou toque em **Publicar agora**.
+
 O risco declarado pelo agente é ignorado: vale o calculado. Uma aprovação vale apenas para a versão
 exata do código avaliado (hash da árvore). Toda publicação guarda o ponto de retorno; rollback é um
 `git revert` (o histórico é preservado).

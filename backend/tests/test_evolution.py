@@ -224,3 +224,22 @@ async def test_old_approval_does_not_authorize_new_code(app_env, client, headers
 
     with pytest.raises(PublishError, match="versão exata"):
         await publish(pid, mode="approved", approved_by="user:x")
+
+
+async def test_approved_but_unpublished_is_retried(app_env, client, headers):
+    """Aprovação que chegou antes de a publicação ser possível é publicada na próxima tentativa."""
+    from ultron.evolution.publisher import retry_approved
+    from ultron.governance.approvals import decide
+    from ultron.models import Approval
+
+    cid = await create_cycle("manual")
+    assert (await run_cycle(cid))["status"] == "completed"
+    async with session_scope() as s:
+        p = (await s.execute(select(Proposal).where(Proposal.kind == "docs"))).scalars().one()
+        ap = (await s.execute(select(Approval).where(Approval.target_id == p.id))).scalars().one()
+        await decide(s, ap.id, approve=True, decided_by="user:x", human=True)
+        p.status = "evaluated"  # simula publicação que falhou (ex.: CI ainda rodando)
+    out = await retry_approved()
+    assert out and out[0]["status"] == "published"
+    r = await client.post(f"/api/evolution/proposals/{p.id}/publish", headers=headers)
+    assert r.status_code == 400 and "já publicada" in r.text

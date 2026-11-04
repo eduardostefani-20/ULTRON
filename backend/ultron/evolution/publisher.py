@@ -290,3 +290,29 @@ async def monitor() -> list[dict]:
                     pub.monitor_until = None
         results.append(verdict)
     return results
+
+
+async def retry_approved() -> list[dict]:
+    """Publica propostas já aprovadas (para a versão exata avaliada) que ainda não entraram no ar —
+    por exemplo, quando a aprovação chegou antes do CI do GitHub terminar."""
+    async with session_scope() as s:
+        rows = (await s.execute(select(Proposal).where(Proposal.status.in_(("evaluated", "approved"))))).scalars().all()
+        ready = []
+        for p in rows:
+            approvals = (await s.execute(select(Approval).where(Approval.target_type == "proposal",
+                                                                Approval.target_id == p.id,
+                                                                Approval.status == "approved"))).scalars().all()
+            approver = next((a.decided_by for a in approvals if (a.details or {}).get("tree_sha") == p.tree_sha), None)
+            if approver and p.tree_sha:
+                ready.append((p.id, p.code, approver))
+    out = []
+    for pid, code, approver in ready:
+        try:
+            pub = await publish(pid, mode="approved", approved_by=approver)
+            out.append({"code": code, "status": pub.status})
+        except PublishError as e:
+            async with session_scope() as s:
+                prop = await s.get(Proposal, pid)
+                prop.error = f"publicação pendente: {e}"
+            out.append({"code": code, "status": "pending", "reason": str(e)[:200]})
+    return out

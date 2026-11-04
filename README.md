@@ -14,7 +14,7 @@ independente e publica de forma controlada**, com aprovação humana e rollback.
 | Interface | Next.js 16 · React 19 · TypeScript · Tailwind 4 |
 | Dados | SQLite em disco persistente (padrão) ou PostgreSQL (Supabase/Render) |
 | IA | Anthropic, OpenAI, Google Gemini, xAI, DeepSeek, Groq, OpenRouter, Mistral, Ollama |
-| Testes | 160 testes automatizados (incl. testes que atacam os controles de segurança) |
+| Testes | 161 testes automatizados (incl. testes que atacam os controles de segurança) |
 
 ## Começar pelo celular
 

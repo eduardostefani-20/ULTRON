@@ -37,7 +37,7 @@ type ProposalDetail = Proposal & { problem: string; diagnosis: string; objective
   dependencies: string[]; benefits: string; risks: string; cost_estimate_usd: number; tests_required: string[]; acceptance_criteria: string[];
   rollback_strategy: string; risk_reasons: string[]; changed_files: { path: string; status: string }[]; dev_log: Record<string, unknown>[];
   evaluations: Evaluation[]; sandbox_runs: { id: string; label: string; status: string; duration_ms: number; isolation: Record<string, unknown>;
-  stdout_tail: string; created_at: string }[]; publications: Publication[];
+  stdout_tail: string; created_at: string }[]; publications: Publication[]; approvals: Approval[];
   tests: { baseline?: Record<string, number>; candidate?: Record<string, number> } | null };
 type Approval = { id: string; kind: string; target_id: string; risk: string; title: string; summary: string; status: string; created_at: string;
   requested_by: string; decided_by: string };
@@ -257,6 +257,9 @@ function ProposalSheet({ id, onClose }: { id: string; onClose: () => void }) {
           {["queued", "failed", "proposed"].includes(data.status) && (
             <Button variant="primary" busy={act.busy} onClick={() => act.run(async () => { await post(`/api/evolution/proposals/${id}/develop`); reload(); })}>
               <Play className="h-4 w-4" /> Desenvolver agora</Button>)}
+          {["evaluated", "approved"].includes(data.status) && data.approvals?.some((a) => a.status === "approved") && (
+            <Button variant="primary" busy={act.busy} onClick={() => act.run(async () => { await post(`/api/evolution/proposals/${id}/publish`); reload(); })}>
+              <Zap className="h-4 w-4" /> Publicar agora</Button>)}
           {["failed", "rejected"].includes(data.status) && <Button busy={act.busy} onClick={() => act.run(async () => { await post(`/api/evolution/proposals/${id}/requeue`); reload(); })}><RotateCcw className="h-4 w-4" /> Voltar para a fila</Button>}
           {!["published", "rejected"].includes(data.status) && <Button variant="danger" busy={act.busy} onClick={() => act.run(async () => { await post(`/api/evolution/proposals/${id}/reject`); reload(); })}>Rejeitar</Button>}
           {data.branch && <Button onClick={async () => setDiff((await get<{ diff: string }>(`/api/workspace/diff/${id}`)).diff)}>Ver diff</Button>}

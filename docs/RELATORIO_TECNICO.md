@@ -46,7 +46,7 @@ de grafo próprios, com estado e governança no banco do ULTRON).
 
 ## 4. Funcionalidades testadas
 
-160 testes automatizados (`cd backend && python -m pytest -q`), todos passando:
+161 testes automatizados (`cd backend && python -m pytest -q`), todos passando:
 
 - **Segurança (105):** ataques diretos aos controles — caminhos protegidos, travessia, symlinks,
   segredos, escalonamento de agentes, SSRF, auditoria adulterada/apagada, configurações protegidas,
@@ -61,7 +61,8 @@ de grafo próprios, com estado e governança no banco do ULTRON).
 - **Autoevolução ponta a ponta sobre git real:** ciclo completo → aprovação → publicação → rollback;
   desenvolvimento por IA aprovado; tentativa maliciosa de alterar governança rejeitada; mudança que
   quebra testes reprovada; autoteste + publicação automática de baixo risco; pausa e retomada;
-  branch perdida após reinício; aprovação antiga não autoriza código novo.
+  branch perdida após reinício; aprovação antiga não autoriza código novo; aprovação que chegou antes
+  do CI é publicada na retentativa automática.
 
 ## 5. Resultados reais obtidos nesta construção
 
@@ -81,6 +82,8 @@ de grafo próprios, com estado e governança no banco do ULTRON).
 - Imagem Docker construída e executada: saúde OK, token de configuração exigido, interface servida,
   `/data` 0711 e banco 0600. Dentro do Docker padrão o `unshare` é bloqueado (rede do sandbox não
   isolada); com `seccomp=unconfined` o isolamento funciona.
+- **CI do GitHub verde** em ambiente independente (runners do GitHub): backend com lint + toda a
+  suíte, e frontend com checagem de tipos + build.
 - Guarda de governança do CI testado localmente: diff em governança reprovado (saída 1), diff de
   documentação aprovado (saída 0).
 
