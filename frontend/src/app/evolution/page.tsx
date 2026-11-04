@@ -400,7 +400,7 @@ function Publications() {
             <li key={p.id} className="py-2.5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0"><div className="text-sm"><span className="font-mono text-xs text-muted">{p.code}</span> {p.title}</div>
-                  <div className="text-xs text-muted">{p.mode === "auto" ? "automática" : `aprovada por ${p.approved_by}`} · {dateTime(p.published_at)} · {p.pushed ? "enviada ao GitHub" : "workspace local"} · {p.merge_sha.slice(0, 8)}</div>
+                  <div className="text-xs text-muted">{p.mode === "auto" ? "automática (baixo risco)" : `aprovada por ${p.approved_by.startsWith("user:") ? "você" : p.approved_by}`} · {dateTime(p.published_at)} · {p.pushed ? "enviada ao GitHub" : "workspace local"} · {p.merge_sha.slice(0, 8)}</div>
                   {p.rollback_reason && <div className="text-xs text-serious">Revertida: {p.rollback_reason}</div>}</div>
                 <div className="flex shrink-0 flex-col items-end gap-1"><StatusPill status={p.status} />
                   {p.status === "published" && <Button variant="ghost" onClick={() => setTarget(p)}><Undo2 className="h-4 w-4" /> Rollback</Button>}</div>

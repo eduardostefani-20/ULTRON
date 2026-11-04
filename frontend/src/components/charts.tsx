@@ -13,7 +13,10 @@ export function BarChart({ data, height = 160, format = (v: number) => String(v)
   const [hover, setHover] = useState<number | null>(null);
   if (!data.length) return <p className="py-6 text-center text-sm text-muted">Sem dados no período.</p>;
   const max = Math.max(...data.map((d) => d.value), 0) || 1;
-  const w = 100 / data.length;
+  // no mínimo 14 posições: poucas barras não ficam gigantes; as mais recentes ficam à direita
+  const slots = Math.max(data.length, 14);
+  const offset = slots - data.length;
+  const w = 100 / slots;
   const ticks = [max, max / 2, 0];
   return (
     <div className="relative">
@@ -21,7 +24,8 @@ export function BarChart({ data, height = 160, format = (v: number) => String(v)
         <div className="flex flex-col justify-between py-0.5 text-right text-[10px] tabular-nums text-muted" style={{ height }}>
           {ticks.map((t, i) => <span key={i}>{format(t)}</span>)}
         </div>
-        <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" className="w-full" style={{ height }} role="img"
+        <div className="min-w-0 flex-1">
+        <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" className="block w-full" style={{ height }} role="img"
           aria-label={ariaLabel} onMouseLeave={() => setHover(null)}>
           {ticks.map((_, i) => (
             <line key={i} x1="0" x2="100" y1={(i / 2) * (height - 1) + 0.5} y2={(i / 2) * (height - 1) + 0.5}
@@ -32,13 +36,14 @@ export function BarChart({ data, height = 160, format = (v: number) => String(v)
             const gap = Math.min(0.8, w * 0.15);
             return (
               <g key={i} onMouseEnter={() => setHover(i)} onTouchStart={() => setHover(i)}>
-                <rect x={i * w} y="0" width={w} height={height} fill="transparent" />
-                <rect x={i * w + gap} y={height - h} width={Math.max(0.4, w - 2 * gap)} height={h} rx="0.6"
+                <rect x={(i + offset) * w} y="0" width={w} height={height} fill="transparent" />
+                <rect x={(i + offset) * w + gap} y={height - h} width={Math.max(0.4, w - 2 * gap)} height={h} rx="0.6"
                   fill={hover === i ? "var(--color-lime)" : "var(--color-series-1)"} />
               </g>
             );
           })}
         </svg>
+        </div>
       </div>
       <div className="mt-1 flex justify-between pl-8 text-[10px] text-muted">
         <span>{data[0].label}</span>
@@ -46,7 +51,7 @@ export function BarChart({ data, height = 160, format = (v: number) => String(v)
       </div>
       {hover !== null && (
         <div className="pointer-events-none absolute top-0 rounded-lg border border-line-strong bg-surface-3 px-2 py-1 text-xs shadow-lg"
-          style={{ left: `calc(${Math.min(80, (hover / data.length) * 100)}% + 2rem)` }}>
+          style={{ left: `calc(${Math.min(70, ((hover + offset) / slots) * 100)}% + 1rem)` }}>
           <div className="text-muted">{data[hover].label}</div>
           <div className="font-semibold tabular-nums text-ink">{data[hover].display ?? format(data[hover].value)}</div>
         </div>

@@ -41,7 +41,7 @@ function MissionDetail({ id }: { id: string }) {
         </>} />
       <ErrorNote error={act.error} />
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-2">
+        <div className="min-w-0 space-y-4 lg:col-span-2">
           <Card title="Objetivo"><p className="whitespace-pre-wrap text-sm text-ink-2">{data.objective}</p></Card>
           <Card title="Plano (grafo de tarefas)" subtitle={data.plan?.planner_model ? `planejado por ${data.plan.planner_model}` : undefined}>
             {data.tasks.length ? (
@@ -66,7 +66,7 @@ function MissionDetail({ id }: { id: string }) {
           {data.result && <Card title="Resultado"><Markdown text={data.result} /></Card>}
           {data.error && <ErrorNote error={data.error} />}
         </div>
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <Card title="Estado">
             <KV items={[["Status", <StatusPill key="s" status={data.status} />], ["Custo", `${usd(data.cost_usd)} de ${usd(data.budget_usd, 2)}`],
               ["Criada", dateTime(data.created_at)], ["Fim", dateTime(data.finished_at)], ["Origem", data.source], ["Prioridade", data.priority]]} />

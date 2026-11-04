@@ -67,7 +67,8 @@ async def create_proposal(session: AsyncSession, *, title: str, source: str = "d
     kind = kind if kind in KINDS else "code"
     files = [str(f) for f in (fields.pop("affected_files", None) or [])][:20]
     risk = estimate_risk(files, kind)
-    cost = float(fields.pop("cost_estimate_usd", 0.05) or 0.05)
+    raw_cost = fields.pop("cost_estimate_usd", None)
+    cost = 0.05 if raw_cost is None else max(0.0, float(raw_cost))
     allowed = {c.key for c in Proposal.__table__.columns}
     clean = {k: v for k, v in fields.items() if k in allowed}
     for attempt in range(5):

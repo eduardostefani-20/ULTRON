@@ -14,7 +14,7 @@ export function Card({ children, className, title, action, subtitle }: {
   children: ReactNode; className?: string; title?: ReactNode; action?: ReactNode; subtitle?: ReactNode;
 }) {
   return (
-    <section className={cx("rounded-2xl border border-line bg-surface/80 backdrop-blur-sm p-4 fade-up", className)}>
+    <section className={cx("min-w-0 rounded-2xl border border-line bg-surface/80 backdrop-blur-sm p-4 fade-up", className)}>
       {(title || action) && (
         <header className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -248,7 +248,7 @@ export function PageHeader({ title, subtitle, actions, icon }: {
 
 function inline(text: string, keyBase: string): ReactNode[] {
   const out: ReactNode[] = [];
-  const rx = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*\s][^*]*\*|\[[^\]]+\]\((https?:\/\/[^)\s]+)\))/g;
+  const rx = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*\s][^*]*\*|\b_[^_\s][^_]*_\b|\[[^\]]+\]\((https?:\/\/[^)\s]+)\))/g;
   let last = 0;
   let m: RegExpExecArray | null;
   let i = 0;
@@ -258,6 +258,7 @@ function inline(text: string, keyBase: string): ReactNode[] {
     const k = `${keyBase}-${i++}`;
     if (tok.startsWith("`")) out.push(<code key={k}>{tok.slice(1, -1)}</code>);
     else if (tok.startsWith("**")) out.push(<strong key={k}>{tok.slice(2, -2)}</strong>);
+    else if (tok.startsWith("_")) out.push(<em key={k}>{tok.slice(1, -1)}</em>);
     else if (tok.startsWith("[")) {
       const label = tok.slice(1, tok.indexOf("]"));
       out.push(<a key={k} href={m[2]} target="_blank" rel="noopener noreferrer nofollow">{label}</a>);

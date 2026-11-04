@@ -52,7 +52,7 @@ function Council() {
             ))}
           </div>
         </Card>
-        <div className="space-y-4 lg:col-span-2">
+        <div className="min-w-0 space-y-4 lg:col-span-2">
           <Card title="Pergunta ou decisão">
             <Field label="O que o Conselho deve analisar?">
               <textarea className={cx(inputCls, "min-h-28")} value={q} onChange={(e) => setQ(e.target.value)}
@@ -89,7 +89,26 @@ function Council() {
                   </div>
                 </Card>
               )}
-              {critique && <Card title="Crítica e divergências"><JsonBlock value={critique} /></Card>}
+              {critique && (
+                <Card title="Crítica e divergências" subtitle={critique.model ? `crítico: ${String(critique.model)}` : undefined}>
+                  {Array.isArray(critique.consensus) && critique.consensus.length > 0 && (
+                    <><h4 className="mb-1 text-xs font-semibold uppercase text-muted">Consenso</h4>
+                      <ul className="mb-3 list-disc pl-5 text-sm">{(critique.consensus as string[]).map((x, i) => <li key={i}>{x}</li>)}</ul></>
+                  )}
+                  {Array.isArray(critique.divergences) && critique.divergences.length > 0 && (
+                    <><h4 className="mb-1 text-xs font-semibold uppercase text-muted">Divergências registradas</h4>
+                      <ul className="mb-3 space-y-2">{(critique.divergences as { topic: string; positions?: Record<string, string>; assessment?: string }[]).map((d, i) => (
+                        <li key={i} className="rounded-xl border border-line p-2 text-sm"><div className="font-medium">{d.topic}</div>
+                          {d.positions && <ul className="mt-1 text-xs text-ink-2">{Object.entries(d.positions).map(([k, v]) => <li key={k}><b>{k}:</b> {v}</li>)}</ul>}
+                          {d.assessment && <p className="mt-1 text-xs text-muted">Avaliação do crítico: {d.assessment}</p>}</li>))}</ul></>
+                  )}
+                  {Array.isArray(critique.errors) && critique.errors.length > 0 && (
+                    <><h4 className="mb-1 text-xs font-semibold uppercase text-muted">Erros apontados</h4>
+                      <ul className="mb-3 list-disc pl-5 text-sm">{(critique.errors as string[]).map((x, i) => <li key={i}>{x}</li>)}</ul></>
+                  )}
+                  <details><summary className="cursor-pointer text-xs text-muted">dados completos</summary><JsonBlock value={critique} /></details>
+                </Card>
+              )}
               {res.mode === "ENGINEERING" && (
                 <Card title="Registro de decisão técnica"><JsonBlock value={res.details.decision_record} /></Card>
               )}
