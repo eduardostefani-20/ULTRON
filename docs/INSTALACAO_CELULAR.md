@@ -1,4 +1,6 @@
-# Instalação pelo celular (sem terminal)
+# Instalação no Render (pago, ~R$ 40/mês)
+
+> Prefere **custo zero**? Use a [instalação grátis na Oracle Cloud](INSTALACAO_ORACLE.md).
 
 Tempo estimado: 15 minutos. Tudo pelo navegador do celular.
 

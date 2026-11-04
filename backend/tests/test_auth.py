@@ -71,3 +71,19 @@ async def test_admin_password_reset(client, auth):
     r = await client.post("/api/auth/login", json={"email": "dono@ultron.dev", "password": "Nova-Senha-Forte-1"})
     assert r.status_code == 200
     assert (await client.post("/api/auth/refresh", json={"refresh_token": auth["_refresh"]})).status_code == 401
+
+
+async def test_github_token_from_integrations_has_priority(client, headers, monkeypatch):
+    from ultron.admin import github_token
+    from ultron.config import reset_settings_cache
+
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_do_ambiente_antigo_0000000000000000")
+    reset_settings_cache()
+    assert await github_token() == "ghp_do_ambiente_antigo_0000000000000000"
+    r = await client.put("/api/integrations/github", headers=headers,
+                         json={"api_key": "github_pat_novo_salvo_no_app_123456789012345"})
+    assert r.status_code == 200
+    from ultron.providers import registry
+
+    registry.invalidate()
+    assert await github_token() == "github_pat_novo_salvo_no_app_123456789012345"

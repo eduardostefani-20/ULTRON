@@ -4,6 +4,12 @@ Câmbio de referência configurável (`ULTRON_USD_BRL_RATE`, padrão R$ 5,50).
 
 ## Infraestrutura
 
+**Opção grátis (recomendada): Oracle Cloud "Always Free"** — VM ARM com até 4 núcleos e 24 GB, disco
+de até 200 GB, HTTPS automático via `sslip.io`: **R$ 0/mês**. Guia: [INSTALACAO_ORACLE.md](INSTALACAO_ORACLE.md).
+Com ela, praticamente os R$ 100 inteiros ficam para IA.
+
+**Opção paga: Render**
+
 | Item | Custo mensal |
 |---|---|
 | Render Starter (sempre ligado, necessário para o scheduler) | US$ 7,00 ≈ R$ 38,50 |
@@ -14,7 +20,7 @@ Câmbio de referência configurável (`ULTRON_USD_BRL_RATE`, padrão R$ 5,50).
 Alternativas: PostgreSQL do Supabase (camada gratuita) via `DATABASE_URL`; VPS com Docker a partir de
 ~US$ 4–5/mês; modelos locais com Ollama (custo zero de IA, exige servidor com mais memória).
 
-## Inteligência artificial (≈ R$ 60 restantes ≈ US$ 11)
+## Inteligência artificial (≈ R$ 100 na Oracle ou ≈ R$ 60 no Render)
 
 Preços de referência por 1 milhão de tokens (entrada / saída), editáveis em Configurações:
 

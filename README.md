@@ -14,16 +14,18 @@ independente e publica de forma controlada**, com aprovação humana e rollback.
 | Interface | Next.js 16 · React 19 · TypeScript · Tailwind 4 |
 | Dados | SQLite em disco persistente (padrão) ou PostgreSQL (Supabase/Render) |
 | IA | Anthropic, OpenAI, Google Gemini, xAI, DeepSeek, Groq, OpenRouter, Mistral, Ollama |
-| Testes | 161 testes automatizados (incl. testes que atacam os controles de segurança) |
+| Testes | 168 testes automatizados (incl. testes que atacam os controles de segurança) |
 
 ## Começar pelo celular
 
-Siga **[docs/INSTALACAO_CELULAR.md](docs/INSTALACAO_CELULAR.md)** — são cerca de 10 toques no
-Render, sem terminal.
+- **Grátis (recomendado):** [docs/INSTALACAO_ORACLE.md](docs/INSTALACAO_ORACLE.md) — VM "Always Free"
+  da Oracle; você cola um script ao criar a VM e ela instala tudo sozinha.
+- **Pago (~R$ 40/mês), mais simples:** [docs/INSTALACAO_CELULAR.md](docs/INSTALACAO_CELULAR.md) — Render.
 
 ## Documentação
 
-- [Instalação pelo celular](docs/INSTALACAO_CELULAR.md)
+- [Instalação grátis na Oracle Cloud](docs/INSTALACAO_ORACLE.md)
+- [Instalação no Render (pago)](docs/INSTALACAO_CELULAR.md)
 - [Arquitetura](docs/ARQUITETURA.md)
 - [Autoevolução: como funciona e como ativar](docs/AUTOEVOLUCAO.md)
 - [Segurança e governança](docs/SEGURANCA.md)

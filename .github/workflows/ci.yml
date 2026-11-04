@@ -24,6 +24,8 @@ jobs:
       - name: Lint
         working-directory: backend
         run: ruff check ultron tests
+      - name: Scripts de implantação (shellcheck)
+        run: shellcheck -S error deploy/oracle/*.sh scripts/*.sh
       - name: Testes
         working-directory: backend
         run: python -m pytest -q

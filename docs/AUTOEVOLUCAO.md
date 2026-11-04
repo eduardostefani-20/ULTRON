@@ -46,6 +46,7 @@ exata do código avaliado (hash da árvore). Toda publicação guarda o ponto de
 2. Se tudo passar, ligue **Publicação automática (somente baixo risco)** e confirme com sua senha.
 3. Se um autoteste futuro falhar, a publicação automática é desligada sozinha.
 
+> Na VM da Oracle (instalação grátis), o sandbox tem isolamento de rede e o autoteste deve passar.
 > Em hospedagens que não permitem namespaces de rede (muitos serviços Docker gerenciados), a checagem
 > "sandbox sem acesso à rede" falha e a publicação automática fica bloqueada — por segurança. A
 > autoevolução continua funcionando com sua aprovação, e cada PR é validado também pelo CI do GitHub.

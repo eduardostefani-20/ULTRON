@@ -1,8 +1,7 @@
 """Administração pelo Shell da hospedagem.
 
-    python -m ultron.admin reset-password seu@email.com
-
-Pede a nova senha sem exibi-la, revoga todas as sessões e registra na auditoria.
+    python -m ultron.admin reset-password seu@email.com   # pede a nova senha, encerra as sessões
+    python -m ultron.admin github-token                   # token vigente (uso interno do atualizador)
 """
 
 from __future__ import annotations
@@ -39,7 +38,24 @@ async def reset_password(email: str, password: str) -> str:
     return "senha redefinida; todas as sessões foram encerradas"
 
 
+async def github_token() -> str:
+    """Token do GitHub vigente: o salvo em Integrações (cifrado) tem prioridade sobre o ambiente."""
+    from ultron.db import init_engine, session_scope
+    from ultron.providers.registry import get_credential
+
+    init_engine()
+    async with session_scope() as s:
+        cred = await get_credential(s, "github")
+    return cred.key if cred else ""
+
+
 def main(argv: list[str]) -> int:
+    if len(argv) == 2 and argv[1] == "github-token":
+        # usado pelo atualizador da VM (root no host); o sandbox não tem a chave mestra nem acesso ao banco
+        token = asyncio.run(github_token())
+        if token:
+            print(token)
+        return 0 if token else 1
     if len(argv) != 3 or argv[1] != "reset-password":
         print(__doc__)
         return 2

@@ -46,7 +46,7 @@ de grafo próprios, com estado e governança no banco do ULTRON).
 
 ## 4. Funcionalidades testadas
 
-161 testes automatizados (`cd backend && python -m pytest -q`), todos passando:
+168 testes automatizados (`cd backend && python -m pytest -q`), todos passando:
 
 - **Segurança (105):** ataques diretos aos controles — caminhos protegidos, travessia, symlinks,
   segredos, escalonamento de agentes, SSRF, auditoria adulterada/apagada, configurações protegidas,
@@ -134,17 +134,28 @@ pedem aprovação. Com GitHub configurado, cada melhoria vira PR e exige CI verd
 
 ## 13. Infraestrutura necessária
 
-Serviço sempre ligado com Docker e disco persistente (Render Starter + disco de 1 GB), repositório
-GitHub privado (já existe), token fine-grained do GitHub para publicar, pelo menos uma chave de IA.
+Serviço sempre ligado com Docker e disco persistente, repositório GitHub privado (já existe), token
+fine-grained do GitHub e pelo menos uma chave de IA. Duas opções prontas:
+
+- **Oracle Cloud "Always Free" (R$ 0):** `deploy/oracle/cloud-init.sh` instala Docker, o ULTRON,
+  HTTPS automático (Caddy + `sslip.io`) e a atualização automática a cada 10 minutos (é assim que as
+  melhorias publicadas pelo ULTRON entram no ar). O sandbox tem isolamento de rede nessa VM e os
+  containers não acessam o serviço de metadados da nuvem. Os scripts de implantação são caminhos
+  protegidos (nenhum agente os altera). Validados aqui: sintaxe, compose, todas as dependências com
+  pacotes ARM64 e o atualizador (teste automatizado com docker simulado). A instalação real na Oracle
+  só pode ser feita na sua conta.
+- **Render Starter (~R$ 40/mês):** `render.yaml`.
 
 ## 14. Custos estimados
 
-≈ R$ 40/mês de infraestrutura + IA limitada pelo orçamento (padrão R$ 100 no total). Ver [CUSTOS.md](CUSTOS.md).
+R$ 0 de infraestrutura na Oracle (ou ≈ R$ 40 no Render) + IA limitada pelo orçamento (padrão
+R$ 100 no total). Ver [CUSTOS.md](CUSTOS.md).
 
 ## 15. Pendências
 
 **Dependem de você (não há como fazer daqui):**
-1. Criar o serviço no Render pelo Blueprint ([INSTALACAO_CELULAR.md](INSTALACAO_CELULAR.md)).
+1. Criar a VM grátis na Oracle colando o script ([INSTALACAO_ORACLE.md](INSTALACAO_ORACLE.md)) —
+   ou o serviço pago no Render ([INSTALACAO_CELULAR.md](INSTALACAO_CELULAR.md)).
 2. Adicionar pelo menos uma chave de IA em Integrações.
 3. Criar o token do GitHub e ativar a proteção do branch (CI obrigatório + Code Owners).
 4. (Opcional) Chave do Tavily para pesquisa melhor.
@@ -160,7 +171,7 @@ GitHub privado (já existe), token fine-grained do GitHub para publicar, pelo me
 
 ## 16. Acesso pelo celular
 
-Após o deploy: abra a URL do serviço no navegador → crie a conta com o token de configuração →
+Após a instalação: abra `https://<IP-com-traços>.sslip.io` (Oracle) ou a URL do Render → crie a conta com o token de configuração →
 instale como aplicativo (Android: menu → Instalar; iPhone: Compartilhar → Tela de Início). A
 navegação inferior dá acesso a Painel, Chat, Missões, Evolução e "Mais" (todas as 14 telas);
 aprovações pendentes aparecem no topo.

@@ -19,7 +19,7 @@ from ultron.tools.netguard import BlockedURL, safe_get, validate_url
     "backend/ultron/evolution/sandbox.py", "backend/ultron/evolution/evaluation.py", "backend/ultron/evolution/guard.py",
     "backend/ultron/evolution/publisher.py", "backend/ultron/evolution/selftest.py", "backend/ultron/settings_store.py",
     "backend/ultron/llm/budget.py", "backend/ultron/tools/netguard.py", "backend/tests/security/test_controls.py",
-    ".github/workflows/ci.yml", "CODEOWNERS", ".env", "backend/.env", "frontend/.env.local", ".git/config",
+    ".github/workflows/ci.yml", "deploy/oracle/update.sh", "deploy/oracle/cloud-init.sh", "CODEOWNERS", ".env", "backend/.env", "frontend/.env.local", ".git/config",
     "../fora.py", "/etc/passwd", "backend/../../x", "a\\b.py", "x\x00.py", "backend/data/ultron.db",
     "frontend/public/logo.png",
 ])

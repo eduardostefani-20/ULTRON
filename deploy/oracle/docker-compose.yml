@@ -1,0 +1,32 @@
+# ULTRON na Oracle Cloud: app + HTTPS automático (Caddy + domínio <ip>.sslip.io).
+# Gerenciado por cloud-init.sh e update.sh — não é preciso mexer aqui.
+name: ultron
+services:
+  ultron:
+    build:
+      context: ../..
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ultron-data:/data
+    # permite ao sandbox do ULTRON criar namespaces de rede (código experimental sem internet)
+    security_opt:
+      - seccomp=unconfined
+
+  caddy:
+    image: caddy:2.10
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      ULTRON_DOMAIN: ${ULTRON_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  ultron-data:
+  caddy-data:
+  caddy-config:

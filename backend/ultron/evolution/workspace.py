@@ -344,17 +344,16 @@ async def get_workspace(ensure: bool = True) -> GitWorkspace:
     global _workspace
     s = get_settings()
     if _workspace is None:
-        token = s.github_token
-        if not token:
-            try:
-                from ultron.db import session_scope
-                from ultron.providers.registry import get_credential
+        # o token salvo em Integrações tem prioridade (permite trocá-lo pelo celular)
+        try:
+            from ultron.db import session_scope
+            from ultron.providers.registry import get_credential
 
-                async with session_scope() as sess:
-                    cred = await get_credential(sess, "github")
-                token = cred.key if cred else ""
-            except Exception:
-                token = ""
+            async with session_scope() as sess:
+                cred = await get_credential(sess, "github")
+            token = cred.key if cred else s.github_token
+        except Exception:
+            token = s.github_token
         remote = s.repo_url
         if not remote and s.github_repo:
             remote = f"https://github.com/{s.github_repo}.git"

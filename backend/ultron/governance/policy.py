@@ -44,6 +44,7 @@ FORBIDDEN_PATHS: tuple[str, ...] = (
     "backend/ultron/tools/netguard.py",
     "backend/tests/security/**",
     ".github/**",
+    "deploy/**",  # scripts executados como root na VM de produção
     "CODEOWNERS",
     ".git/**",
     "**/.git/**",
