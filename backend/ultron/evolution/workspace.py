@@ -165,6 +165,19 @@ class GitWorkspace:
         await git("commit", "-m", message, "--author", f"{GIT_AUTHOR[0]} <{GIT_AUTHOR[1]}>", cwd=worktree)
         return (await git("rev-parse", "HEAD", cwd=worktree)).out.strip()
 
+    async def branch_exists(self, branch: str) -> bool:
+        r = await git("rev-parse", "--verify", "--quiet", f"refs/heads/{branch}", cwd=self.root, check=False)
+        return r.code == 0
+
+    async def ensure_branch(self, branch: str) -> bool:
+        """Garante a branch localmente; se faltar (ex.: workspace recriado após reinício), busca no remoto."""
+        if await self.branch_exists(branch):
+            return True
+        if await self.has_remote():
+            await git("fetch", "origin", f"+refs/heads/{branch}:refs/heads/{branch}", cwd=self.root, token=self.token,
+                      check=False, timeout=300)
+        return await self.branch_exists(branch)
+
     async def delete_branch(self, branch: str) -> None:
         await git("branch", "-D", branch, cwd=self.root, check=False)
 

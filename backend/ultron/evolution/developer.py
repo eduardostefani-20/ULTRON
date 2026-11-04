@@ -175,6 +175,12 @@ async def develop(proposal_id: str, cycle_id: str = "") -> dict:
                                       f"ULTRON (proposta {snapshot['code']}).")
         if not sha:
             raise ValueError("nenhuma alteração foi produzida")
+        try:
+            pushed = await ws.push(branch, force=True)  # sobrevive a reinícios do servidor
+        except Exception as e:  # sem acesso ao remoto: a branch fica apenas no workspace local
+            log.info("branch não enviada ao remoto: %s", e)
+            pushed = False
+        log_entries.append({"step": "persistência", "pushed_to_remote": pushed})
         changes = await ws.diff_changes(base_sha, branch)
         tree = await ws.tree(branch)
         added = sum(len(c.added_lines) for c in changes)

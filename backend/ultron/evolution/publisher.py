@@ -20,9 +20,9 @@ from ultron.evolution.github import GitHubError, client_from_settings
 from ultron.evolution.observability import snapshot
 from ultron.evolution.workspace import get_workspace
 from ultron.governance import audit
-from ultron.governance.approvals import is_approved, request_approval
+from ultron.governance.approvals import request_approval
 from ultron.governance.policy import Risk, assess_changes, requires_human_approval
-from ultron.models import Evaluation, Proposal, Publication
+from ultron.models import Approval, Evaluation, Proposal, Publication
 from ultron.utils import utcnow
 
 log = logging.getLogger("ultron.publisher")
@@ -35,6 +35,14 @@ class PublishError(Exception):
 async def _latest_eval(session, proposal_id: str) -> Evaluation | None:
     return (await session.execute(select(Evaluation).where(Evaluation.proposal_id == proposal_id)
                                   .order_by(Evaluation.created_at.desc()).limit(1))).scalar_one_or_none()
+
+
+async def _approved_for_tree(session, proposal_id: str, tree_sha: str) -> bool:
+    """Uma aprovação vale somente para a árvore de código que foi avaliada e mostrada ao humano."""
+    rows = (await session.execute(select(Approval).where(Approval.target_type == "proposal",
+                                                         Approval.target_id == proposal_id,
+                                                         Approval.status == "approved"))).scalars().all()
+    return any((a.details or {}).get("tree_sha") == tree_sha and tree_sha for a in rows)
 
 
 async def auto_publish_allowed(session, ev: Evaluation) -> tuple[bool, list[str]]:
@@ -78,7 +86,8 @@ async def decide(proposal_id: str) -> str:
                 title=f"{p.code}: {p.title}",
                 summary=f"Risco calculado: {ev.risk_level}. Avaliação aprovada. Motivos para revisão humana: "
                         + "; ".join(reasons),
-                details={"code": p.code, "reasons": reasons, "branch": p.branch}, requested_by="evolution_engine")
+                details={"code": p.code, "reasons": reasons, "branch": p.branch, "tree_sha": p.tree_sha},
+                requested_by="evolution_engine")
             p.status = "awaiting_approval"
             await audit.record("evolution_engine", "publication.approval_requested", p.code,
                                {"approval_id": ap.id, "reasons": reasons}, session=s)
@@ -124,8 +133,8 @@ async def publish(proposal_id: str, *, mode: str, approved_by: str) -> Publicati
             raise PublishError("somente propostas com avaliação aprovada podem ser publicadas")
         if p.status == "published":
             raise PublishError("proposta já publicada")
-        if mode != "auto" and not await is_approved(s, "proposal", p.id):
-            raise PublishError("publicação exige aprovação humana registrada")
+        if mode != "auto" and not await _approved_for_tree(s, p.id, p.tree_sha):
+            raise PublishError("publicação exige aprovação humana registrada para esta versão exata do código")
         if mode == "auto":
             allowed, reasons = await auto_publish_allowed(s, ev)
             if not allowed:
@@ -136,6 +145,12 @@ async def publish(proposal_id: str, *, mode: str, approved_by: str) -> Publicati
 
     ws = await get_workspace()
     await ws.sync()
+    if not await ws.ensure_branch(snap["branch"]):
+        from ultron.evolution.evaluation import requeue_missing_branch
+
+        await requeue_missing_branch(proposal_id)
+        raise PublishError("a branch avaliada não existe mais neste servidor — a proposta voltou para a fila e será "
+                           "redesenvolvida e reavaliada")
     # defesa em profundidade: revalida árvore, base e política imediatamente antes do merge
     if await ws.tree(snap["branch"]) != snap["tree_sha"]:
         raise PublishError("a branch foi alterada após a avaliação — reavaliação necessária")

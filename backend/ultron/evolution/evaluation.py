@@ -24,7 +24,7 @@ from ultron.governance import audit
 from ultron.governance.policy import assess_changes
 from ultron.llm.budget import BudgetContext
 from ultron.llm.service import ChatMessage, TaskProfile, available_choices, complete_json
-from ultron.models import Evaluation, Proposal, SandboxRun
+from ultron.models import Approval, Evaluation, Proposal, SandboxRun
 from ultron.utils import truncate
 
 log = logging.getLogger("ultron.evaluation")
@@ -49,12 +49,28 @@ async def _baseline(ws, base_sha: str) -> dict:
     return await sandbox.run_test_suite(ws, ref=base_sha, label=label)
 
 
+async def requeue_missing_branch(proposal_id: str) -> None:
+    async with session_scope() as s:
+        p = await s.get(Proposal, proposal_id)
+        p.status = "queued"
+        p.error = "a branch de desenvolvimento não existe mais (workspace recriado); a proposta será redesenvolvida"
+        pending = (await s.execute(select(Approval).where(Approval.target_id == proposal_id,
+                                                          Approval.status == "pending"))).scalars().all()
+        for a in pending:
+            a.status = "expired"  # a próxima versão exigirá nova aprovação
+        await audit.record("evaluation_engine", "proposal.requeued_missing_branch", p.code, {"branch": p.branch},
+                           session=s)
+
+
 async def test_candidate(proposal_id: str) -> dict:
     """Fase TESTE: executa a suíte no estado original e no candidato, ambos no sandbox."""
     async with session_scope() as s:
         p = await s.get(Proposal, proposal_id)
         branch, base_sha, code = p.branch, p.base_sha, p.code
     ws = await get_workspace()
+    if not await ws.ensure_branch(branch):
+        await requeue_missing_branch(proposal_id)
+        return {"missing_branch": True, "candidate": {}}
     baseline = await _baseline(ws, base_sha)
     candidate = await sandbox.run_test_suite(ws, ref=branch, label=f"candidate:{code}", proposal_id=proposal_id)
     async with session_scope() as s:
@@ -103,6 +119,9 @@ async def finalize(proposal_id: str, cycle_id: str = "") -> Evaluation:
         snap = {k: getattr(p, k) for k in ("code", "title", "kind", "strategy", "branch", "base_sha", "tree_sha",
                                             "acceptance_criteria", "solution", "objective", "payload", "declared_risk")}
     ws = await get_workspace()
+    if not await ws.ensure_branch(snap["branch"]):
+        await requeue_missing_branch(proposal_id)
+        raise RuntimeError("branch de desenvolvimento ausente — proposta devolvida à fila")
     gates: list[dict] = []
 
     def gate(name: str, passed: bool, detail: str = "", hard: bool = True) -> None:

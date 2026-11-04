@@ -123,7 +123,7 @@ def create_app() -> FastAPI:
     if frontend.exists() and (frontend / "index.html").exists():
         app.mount("/_next", StaticFiles(directory=frontend / "_next"), name="next-assets")
 
-        @app.get("/{path:path}", include_in_schema=False)
+        @app.api_route("/{path:path}", methods=["GET", "HEAD"], include_in_schema=False)
         async def spa(path: str):
             if path.startswith("api/"):
                 return JSONResponse({"detail": "não encontrado"}, status_code=404)

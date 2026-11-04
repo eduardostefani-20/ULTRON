@@ -200,6 +200,9 @@ async def run_cycle(cycle_id: str) -> dict:
                 for pid in ids:
                     await _guard(cycle_id, deadline)
                     t = await evaluation.test_candidate(pid)
+                    if t.get("missing_branch"):
+                        await _log(cycle_id, phase, f"Proposta {pid[:8]} sem branch — devolvida à fila")
+                        continue
                     tested.append({"proposal_id": pid, "candidate": {k: t["candidate"].get(k) for k in
                                                                     ("passed", "failed", "errors", "tests")}})
                 result = {"tested": tested}
@@ -318,7 +321,9 @@ async def develop_now(proposal_id: str) -> dict:
     r = await developer.develop(proposal_id)
     if r.get("status") != "testing":
         return r
-    await evaluation.test_candidate(proposal_id)
+    t = await evaluation.test_candidate(proposal_id)
+    if t.get("missing_branch"):
+        return {"status": "queued", "error": "branch ausente"}
     ev = await evaluation.finalize(proposal_id)
     out = {"status": "evaluated", "verdict": ev.verdict, "risk": ev.risk_level}
     if ev.verdict == "pass":

@@ -360,12 +360,13 @@ async def decide_approval(aid: str, body: DecisionIn, user: User = Depends(owner
             async def _go(pid: str, actor: str) -> None:
                 try:
                     await publish(pid, mode="approved", approved_by=actor)
-                except PublishError as e:
+                except Exception as e:  # registra qualquer falha na própria proposta (visível no app)
                     async with session_scope() as s:
                         prop = await s.get(Proposal, pid)
                         prop.error = f"publicação falhou: {e}"
                         if prop.status == "approved":
                             prop.status = "evaluated"
+                    await audit.record(actor, "proposal.publish_failed", pid, {"error": str(e)[:500]})
 
             _spawn(_go(ap.target_id, f"user:{user.id}"))
             result["message"] = "publicação iniciada"

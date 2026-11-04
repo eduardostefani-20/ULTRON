@@ -34,10 +34,10 @@ class AnthropicProvider:
         if client is not None:
             self._client = client
         else:
-            kwargs: dict = {"api_key": api_key, "max_retries": 1, "timeout": 180.0}
-            if base_url and "api.anthropic.com" not in base_url:
-                kwargs["base_url"] = base_url
-            self._client = anthropic.AsyncAnthropic(**kwargs)
+            # base_url sempre explícita: variáveis de ambiente do host (ex.: ANTHROPIC_BASE_URL)
+            # nunca devem redirecionar as chamadas nem as credenciais do ULTRON
+            self._client = anthropic.AsyncAnthropic(api_key=api_key, max_retries=1, timeout=180.0,
+                                                    base_url=base_url or "https://api.anthropic.com")
 
     async def chat(self, req: ChatRequest) -> ChatResult:
         system, convo = split_system(req.messages)

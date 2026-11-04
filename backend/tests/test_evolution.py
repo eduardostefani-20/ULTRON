@@ -187,3 +187,40 @@ async def test_pause_blocks_new_cycles(app_env, client, headers):
     assert (await client.post("/api/evolution/resume", headers=headers)).json()["paused"] is False
     res = await run_cycle(cid)  # retoma o ciclo interrompido
     assert res["status"] == "completed"
+
+
+async def test_lost_branch_after_restart_requeues_instead_of_crashing(app_env, client, headers):
+    """Regressão: workspace recriado (ex.: deploy em disco efêmero) não pode travar a publicação."""
+    cid = await create_cycle("manual")
+    assert (await run_cycle(cid))["status"] == "completed"
+    async with session_scope() as s:
+        p = (await s.execute(select(Proposal).where(Proposal.kind == "docs"))).scalars().one()
+        pid, branch = p.id, p.branch
+    ws = await get_workspace()
+    await git("branch", "-D", branch, cwd=ws.root)  # simula a perda da branch
+    await _approve_publication(client, headers, pid)
+    detail = (await client.get(f"/api/evolution/proposals/{pid}", headers=headers)).json()
+    assert detail["status"] == "queued" and "redesenvolvida" in detail["error"]
+    async with session_scope() as s:
+        assert (await s.execute(select(Publication))).scalars().first() is None
+
+
+async def test_old_approval_does_not_authorize_new_code(app_env, client, headers):
+    """Segurança: aprovar a versão A de uma proposta não autoriza publicar uma versão B diferente."""
+    from ultron.evolution.publisher import PublishError, publish
+
+    cid = await create_cycle("manual")
+    assert (await run_cycle(cid))["status"] == "completed"
+    async with session_scope() as s:
+        p = (await s.execute(select(Proposal).where(Proposal.kind == "docs"))).scalars().one()
+        pid = p.id
+        from ultron.governance.approvals import decide
+        from ultron.models import Approval
+
+        ap = (await s.execute(select(Approval).where(Approval.target_id == pid))).scalars().one()
+        await decide(s, ap.id, approve=True, decided_by="user:x", human=True)
+        p.tree_sha = "0" * 40  # outra versão do código
+    import pytest
+
+    with pytest.raises(PublishError, match="versão exata"):
+        await publish(pid, mode="approved", approved_by="user:x")
