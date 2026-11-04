@@ -32,6 +32,49 @@ from ultron.utils import tail
 
 OUTPUT_LIMIT = 20000
 SAFE_ENV_KEYS = ("LANG", "LC_ALL", "TZ")
+SANDBOX_UID = 65534  # "nobody": sem acesso aos arquivos do servidor (banco SQLite, chaves, workspace)
+
+
+def _uid_mapped(uid: int) -> bool:
+    """Dentro de um namespace de usuário (ex.: o próprio sandbox) só alguns UIDs existem."""
+    try:
+        for line in Path("/proc/self/uid_map").read_text().splitlines():
+            inside, _outside, count = (int(x) for x in line.split())
+            if inside <= uid < inside + count:
+                return True
+        return False
+    except (OSError, ValueError):
+        return True
+
+
+def drops_privileges() -> bool:
+    """Quando o servidor roda como root (contêineres), o código experimental roda como 'nobody'."""
+    return (os.geteuid() == 0 and os.environ.get("ULTRON_SANDBOX_DROP_PRIVILEGES", "1") != "0"
+            and os.environ.get("ULTRON_IN_SANDBOX") != "1" and _uid_mapped(SANDBOX_UID))
+
+
+def _chown_tree(path: Path) -> None:
+    for dirpath, dirnames, filenames in os.walk(path):
+        for name in [*dirnames, *filenames]:
+            try:
+                os.lchown(os.path.join(dirpath, name), SANDBOX_UID, SANDBOX_UID)
+            except OSError:
+                pass
+    try:
+        os.lchown(path, SANDBOX_UID, SANDBOX_UID)
+    except OSError:
+        pass
+
+
+def _ensure_traversable(path: Path) -> None:
+    """Permite ao usuário do sandbox apenas ATRAVESSAR os diretórios-pai (sem listar nem ler arquivos)."""
+    for parent in Path(path).resolve().parents:
+        try:
+            st = parent.stat()
+            if st.st_uid == os.geteuid() and not st.st_mode & 0o001:
+                os.chmod(parent, (st.st_mode & 0o7777) | 0o001)
+        except OSError:
+            continue
 
 
 @lru_cache
@@ -75,6 +118,7 @@ def clean_env(tmp: Path, extra: dict | None = None) -> dict:
         "ULTRON_ENV": "test",
         "ULTRON_DATA_DIR": str(tmp / "data"),
         "ULTRON_ENABLE_BACKGROUND": "false",
+        "ULTRON_IN_SANDBOX": "1",
         "CI": "1",
         "NO_COLOR": "1",
     }
@@ -89,7 +133,7 @@ def clean_env(tmp: Path, extra: dict | None = None) -> dict:
     return env
 
 
-def _limits(mem_mb: int, cpu_s: int):
+def _limits(mem_mb: int, cpu_s: int, drop: bool):
     def apply() -> None:
         os.setsid()
         resource.setrlimit(resource.RLIMIT_AS, (mem_mb * 1024 * 1024, mem_mb * 1024 * 1024))
@@ -100,13 +144,17 @@ def _limits(mem_mb: int, cpu_s: int):
             resource.setrlimit(resource.RLIMIT_NOFILE, (1024, 1024))
         except (ValueError, OSError):
             pass
+        if drop:
+            os.setgroups([])
+            os.setgid(SANDBOX_UID)
+            os.setuid(SANDBOX_UID)
 
     return apply
 
 
 async def run(cmd: list[str], cwd: Path, *, timeout: int | None = None, network: bool = False,
               mem_mb: int | None = None, extra_env: dict | None = None, label: str = "", proposal_id: str = "",
-              record: bool = True, tmp_root: Path | None = None) -> dict:
+              record: bool = True, tmp_root: Path | None = None, owner_root: Path | None = None) -> dict:
     s = get_settings()
     timeout = timeout or s.sandbox_timeout_seconds
     mem_mb = mem_mb or max(1024, s.sandbox_memory_mb)
@@ -115,6 +163,13 @@ async def run(cmd: list[str], cwd: Path, *, timeout: int | None = None, network:
     for d in ("home", "tmp", "data"):
         (tmp / d).mkdir()
     env = clean_env(tmp, extra_env)
+    drop = drops_privileges() and level != "container"
+    if drop:
+        _chown_tree(tmp)
+        root_for_owner = Path(owner_root or cwd)
+        _chown_tree(root_for_owner)
+        _ensure_traversable(root_for_owner)
+        _ensure_traversable(tmp)
     full = list(cmd)
     net_state = "allowed" if network else "none"
     if level == "container" and s.sandbox_docker_image:
@@ -128,13 +183,13 @@ async def run(cmd: list[str], cwd: Path, *, timeout: int | None = None, network:
     elif not network:
         net_state = "not_isolated"
     isolation = {"level": level, "network": net_state, "memory_mb": mem_mb, "timeout_s": timeout,
-                 "clean_env": True, "env_keys": sorted(env.keys())}
+                 "clean_env": True, "user": "nobody" if drop else "server-user", "env_keys": sorted(env.keys())}
     t0 = time.monotonic()
     timed_out = False
     try:
         proc = await asyncio.create_subprocess_exec(
             *full, cwd=str(cwd), env=env, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-            stdin=asyncio.subprocess.DEVNULL, preexec_fn=_limits(mem_mb, timeout + 10),
+            stdin=asyncio.subprocess.DEVNULL, preexec_fn=_limits(mem_mb, timeout + 10, drop),
         )
         try:
             out, err = await asyncio.wait_for(proc.communicate(), timeout=timeout)
@@ -207,14 +262,18 @@ async def run_test_suite(ws, *, ref: str | None = None, worktree: Path | None = 
     backend = worktree / "backend"
     try:
         junit_dir = Path(tempfile.mkdtemp(prefix="ultron-junit-"))
+        if drops_privileges():
+            _chown_tree(junit_dir)
         junit = junit_dir / "junit.xml"
         target = test_path if test_path else "tests"
         if test_path and (".." in test_path or test_path.startswith("/")):
             return {"passed": 0, "failed": 0, "errors": 1, "exit_code": 2, "duration_ms": 0,
                     "isolation": {}, "output_tail": "caminho de teste inválido"}
         cmd = [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", f"--junitxml={junit}", target]
+        if drops_privileges():
+            _ensure_traversable(junit_dir)
         res = await run(cmd, backend, label=label, proposal_id=proposal_id,
-                        extra_env={"PYTHONPATH": str(backend)})
+                        extra_env={"PYTHONPATH": str(backend)}, owner_root=worktree)
         parsed = parse_junit(junit)
         shutil.rmtree(junit_dir, ignore_errors=True)
         cleanup(res)
@@ -275,7 +334,8 @@ async def run_allowed_command(ws, cmd: list[str], *, ref: str | None = None) -> 
     wt = await ws.detached_worktree(ref, f"sbx-cmd-{int(time.time())}")
     try:
         cwd = wt / "backend" if cmd[0] == "python" else wt
-        res = await run(real, cwd, timeout=300, label="command", extra_env={"PYTHONPATH": str(wt / "backend")})
+        res = await run(real, cwd, timeout=300, label="command", extra_env={"PYTHONPATH": str(wt / "backend")},
+                        owner_root=wt)
         cleanup(res)
         return {"exit_code": res["exit_code"], "output": tail(res["stdout"] + "\n" + res["stderr"], 8000),
                 "isolation": res["isolation"]}

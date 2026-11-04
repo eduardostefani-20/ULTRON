@@ -47,8 +47,9 @@ async def git(*args: str, cwd: Path, token: str = "", check: bool = True, timeou
     cmd = ["git"]
     if token:
         cmd += ["-c", _auth_header(token)]
+    # safe.directory: worktrees podem pertencer ao usuário do sandbox após execuções isoladas
     cmd += ["-c", f"user.name={GIT_AUTHOR[0]}", "-c", f"user.email={GIT_AUTHOR[1]}", "-c", "core.hooksPath=/dev/null",
-            *args]
+            "-c", "safe.directory=*", *args]
     env = dict(os.environ)
     env["GIT_TERMINAL_PROMPT"] = "0"
     proc = await asyncio.create_subprocess_exec(*cmd, cwd=str(cwd), stdout=asyncio.subprocess.PIPE,

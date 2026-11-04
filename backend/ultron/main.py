@@ -44,9 +44,27 @@ async def bootstrap() -> None:
             log.error("arquivos de governança ausentes: %s", info["missing"])
 
 
+def harden_data_dir() -> None:
+    """Arquivos do servidor privados por padrão; o diretório de dados é apenas atravessável para que o
+    sandbox (usuário 'nobody') alcance as worktrees sem conseguir ler banco, chaves ou memórias."""
+    import os
+
+    os.umask(0o077)
+    d = get_settings().data_dir
+    d.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(d, 0o711)  # noqa: S103 - somente travessia (x), sem leitura/listagem por outros
+        for f in d.iterdir():
+            if f.is_file() and (f.suffix in (".db", ".key") or ".db-" in f.name):
+                os.chmod(f, 0o600)
+    except OSError:
+        pass
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     s = get_settings()
+    harden_data_dir()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     s.resolved_secret_key()  # falha cedo em produção sem chave
     init_engine()

@@ -160,8 +160,8 @@ async def test_selftest_then_low_risk_auto_publish(app_env, client, headers):
     st = r.json()
     from ultron.evolution import sandbox
 
-    if not sandbox.capabilities()["unshare_net"]:
-        # sem namespaces de rede o autoteste DEVE falhar e manter a publicação automática bloqueada
+    if not (sandbox.capabilities()["unshare_net"] and sandbox.drops_privileges()):
+        # sem rede isolada ou sem usuário separado o autoteste DEVE falhar e manter a publicação automática bloqueada
         assert not st["passed"]
         r = await client.post("/api/evolution/autopublish", headers=headers, json={"enabled": True, "password": PASSWORD})
         assert r.status_code == 400

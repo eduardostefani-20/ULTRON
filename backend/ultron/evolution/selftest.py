@@ -100,6 +100,18 @@ async def run_selftest(actor: str) -> dict:
         isolated = r["isolation"]["network"] == "isolated"
         check("sandbox sem acesso à rede", isolated and "CONECTOU" not in r["stdout"],
               f"isolamento: {r['isolation']['network']}")
+        from ultron.config import get_settings
+
+        secret_file = get_settings().data_dir / ".selftest-private"
+        secret_file.parent.mkdir(parents=True, exist_ok=True)
+        secret_file.write_text("conteudo-privado-do-servidor")
+        os.chmod(secret_file, 0o600)
+        r = await sandbox.run([sys.executable, "-c", f"print(open({str(secret_file)!r}).read())"], Path(td), timeout=30,
+                              label="selftest:files", record=True)
+        sandbox.cleanup(r)
+        secret_file.unlink(missing_ok=True)
+        check("sandbox não lê arquivos privados do servidor", "conteudo-privado" not in r["stdout"],
+              f"usuário do sandbox: {r['isolation'].get('user')}")
     # 8. suíte de testes de segurança executada no sandbox, sobre o branch estável
     try:
         ws = await get_workspace()

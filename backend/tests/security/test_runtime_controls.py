@@ -175,3 +175,17 @@ async def test_non_human_cannot_decide_approvals(app_env):
                                     title="x")
         with pytest.raises(ApprovalError):
             await decide(s, ap.id, approve=True, decided_by="agent:developer", human=False)
+
+
+@pytest.mark.skipif(not sandbox.drops_privileges(), reason="servidor não roda como root")
+async def test_sandbox_cannot_read_server_private_files(tmp_path):
+    import os
+
+    private = tmp_path / "ultron.db"
+    private.write_text("dados-pessoais")
+    os.chmod(private, 0o600)
+    work = tmp_path / "work"
+    work.mkdir()
+    r = await sandbox.run([sys.executable, "-c", f"print(open({str(private)!r}).read())"], work, timeout=30, record=False)
+    sandbox.cleanup(r)
+    assert "dados-pessoais" not in r["stdout"] and r["isolation"]["user"] == "nobody"
