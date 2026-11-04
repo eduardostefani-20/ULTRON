@@ -86,6 +86,10 @@ async def save_integration(provider: str, body: CredentialIn, user: User = Depen
     await session.flush()
     registry.invalidate()
     health.reset()
+    if provider == "github":
+        from ultron.evolution.workspace import reset_workspace
+
+        reset_workspace()  # o workspace passa a usar o novo token
     await audit.record(f"user:{user.id}", "integration.saved", provider,
                        {"key_changed": bool(body.api_key), "enabled": body.enabled}, session=session)
     return {"ok": True}

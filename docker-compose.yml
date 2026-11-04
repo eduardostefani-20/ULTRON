@@ -1,0 +1,14 @@
+# Execução em VPS/computador: docker compose up -d   (depois acesse http://SEU_IP:8000)
+services:
+  ultron:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file: .env
+    volumes:
+      - ultron-data:/data
+    # Para isolamento de rede do sandbox via namespaces dentro do contêiner, o host precisa permitir
+    # user namespaces; em último caso use: security_opt: ["seccomp=unconfined"] (avalie o risco).
+volumes:
+  ultron-data:

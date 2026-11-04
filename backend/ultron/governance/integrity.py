@@ -23,6 +23,7 @@ GOVERNANCE_FILES = (
     "governance/permissions.py",
     "governance/audit.py",
     "governance/integrity.py",
+    "governance/ci_guard.py",
     "security/passwords.py",
     "security/tokens.py",
     "security/vault.py",

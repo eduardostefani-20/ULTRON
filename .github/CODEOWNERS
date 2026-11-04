@@ -1,0 +1,14 @@
+# Caminhos de governança: mudanças exigem revisão do proprietário (ative "Require review from Code Owners"
+# na proteção do branch principal). Agentes do ULTRON não podem alterar estes arquivos.
+/backend/ultron/governance/        @eduardostefani-20
+/backend/ultron/security/          @eduardostefani-20
+/backend/ultron/evolution/guard.py @eduardostefani-20
+/backend/ultron/evolution/sandbox.py @eduardostefani-20
+/backend/ultron/evolution/evaluation.py @eduardostefani-20
+/backend/ultron/evolution/publisher.py @eduardostefani-20
+/backend/ultron/evolution/selftest.py @eduardostefani-20
+/backend/ultron/settings_store.py  @eduardostefani-20
+/backend/ultron/llm/budget.py      @eduardostefani-20
+/backend/ultron/tools/netguard.py  @eduardostefani-20
+/backend/tests/security/           @eduardostefani-20
+/.github/                          @eduardostefani-20

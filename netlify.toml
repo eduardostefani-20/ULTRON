@@ -1,0 +1,13 @@
+# Opcional: publicar só a interface no Netlify. O backend continua em outra hospedagem.
+# Defina NEXT_PUBLIC_API_URL (URL do backend) no Netlify e ULTRON_CORS_ORIGINS (URL do Netlify) no backend.
+[build]
+  base = "frontend"
+  command = "npm ci && npm run build"
+  publish = "out"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"

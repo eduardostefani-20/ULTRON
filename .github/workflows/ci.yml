@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (lint + testes, incluindo segurança)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Dependências
+        run: |
+          pip install -r backend/requirements.txt
+          pip install --no-deps -e backend
+      - name: Lint
+        working-directory: backend
+        run: ruff check ultron tests
+      - name: Testes
+        working-directory: backend
+        run: python -m pytest -q
+
+  frontend:
+    name: Frontend (tipos + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          npm run build
+
+  governance-guard:
+    name: Guarda de governança (PRs do ULTRON)
+    if: github.event_name == 'pull_request' && (startsWith(github.head_ref, 'evolution/') || startsWith(github.head_ref, 'rollback/'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Regras carregadas do branch BASE (o PR não altera quem o avalia)
+        run: |
+          git worktree add /tmp/base "origin/${{ github.base_ref }}"
+          PYTHONPATH=/tmp/base/backend python -m ultron.governance.ci_guard "origin/${{ github.base_ref }}" HEAD
