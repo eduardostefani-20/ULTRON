@@ -95,6 +95,23 @@ def mini_repo(tmp_path) -> Path:
     return root
 
 
+async def _reset_postgres(url: str) -> None:
+    import asyncpg
+
+    from ultron.config import normalize_database_url
+
+    dsn = normalize_database_url(url).replace("postgresql+asyncpg://", "postgresql://")
+    conn = await asyncpg.connect(dsn)
+    try:
+        await conn.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+    finally:
+        await conn.close()
+
+
+def is_postgres() -> bool:
+    return bool(os.environ.get("ULTRON_TEST_DATABASE_URL"))
+
+
 @pytest.fixture
 async def app_env(tmp_path, monkeypatch, mini_repo):
     """Aplicação completa com banco novo (migrações reais) e workspace apontando para o mini repo."""
@@ -105,6 +122,10 @@ async def app_env(tmp_path, monkeypatch, mini_repo):
     for k in ("DATABASE_URL", "GITHUB_TOKEN", "ULTRON_REPO_URL", "ULTRON_GITHUB_REPO", "ULTRON_SETUP_TOKEN",
               "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY"):
         monkeypatch.delenv(k, raising=False)
+    pg_url = os.environ.get("ULTRON_TEST_DATABASE_URL")
+    if pg_url:  # mesma suíte contra PostgreSQL (CI e validação para Supabase)
+        await _reset_postgres(pg_url)
+        monkeypatch.setenv("DATABASE_URL", pg_url)
     from ultron import telemetry
     from ultron.api.deps import auth_limiter
     from ultron.config import reset_settings_cache

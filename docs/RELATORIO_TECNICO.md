@@ -46,7 +46,7 @@ de grafo próprios, com estado e governança no banco do ULTRON).
 
 ## 4. Funcionalidades testadas
 
-168 testes automatizados (`cd backend && python -m pytest -q`), todos passando:
+173 testes automatizados, executados em SQLite e PostgreSQL (`cd backend && python -m pytest -q`), todos passando:
 
 - **Segurança (105):** ataques diretos aos controles — caminhos protegidos, travessia, symlinks,
   segredos, escalonamento de agentes, SSRF, auditoria adulterada/apagada, configurações protegidas,
@@ -134,8 +134,16 @@ pedem aprovação. Com GitHub configurado, cada melhoria vira PR e exige CI verd
 
 ## 13. Infraestrutura necessária
 
-Serviço sempre ligado com Docker e disco persistente, repositório GitHub privado (já existe), token
-fine-grained do GitHub e pelo menos uma chave de IA. Duas opções prontas:
+Serviço sempre ligado, banco persistente, repositório GitHub privado (já existe), token fine-grained do
+GitHub e pelo menos uma chave de IA. Três opções prontas:
+
+- **Hugging Face Spaces + Supabase (R$ 0, sem cartão):** Space público contendo apenas um
+  inicializador (`deploy/huggingface/`); o código privado é baixado em tempo de execução; o GitHub
+  Actions (`deploy-hf.yml`) cria o Space, grava os segredos, reinicia a cada atualização e o mantém
+  acordado. Validado aqui: a suíte inteira contra PostgreSQL 16 (também no CI), o inicializador
+  executado como usuário comum (clone → dependências → build da interface → migrações → servidor no
+  ar em ~40 s) e o autoteste nesse cenário (ambiente do servidor protegido; publicação automática
+  corretamente bloqueada). IA gratuita: Gemini e Groq.
 
 - **Oracle Cloud "Always Free" (R$ 0):** `deploy/oracle/cloud-init.sh` instala Docker, o ULTRON,
   HTTPS automático (Caddy + `sslip.io`) e a atualização automática a cada 10 minutos (é assim que as
@@ -154,7 +162,8 @@ R$ 100 no total). Ver [CUSTOS.md](CUSTOS.md).
 ## 15. Pendências
 
 **Dependem de você (não há como fazer daqui):**
-1. Criar a VM grátis na Oracle colando o script ([INSTALACAO_ORACLE.md](INSTALACAO_ORACLE.md)) —
+1. Seguir a instalação grátis e sem cartão ([INSTALACAO_GRATIS_SEM_CARTAO.md](INSTALACAO_GRATIS_SEM_CARTAO.md)),
+   ou criar a VM grátis na Oracle colando o script ([INSTALACAO_ORACLE.md](INSTALACAO_ORACLE.md)) —
    ou o serviço pago no Render ([INSTALACAO_CELULAR.md](INSTALACAO_CELULAR.md)).
 2. Adicionar pelo menos uma chave de IA em Integrações.
 3. Criar o token do GitHub e ativar a proteção do branch (CI obrigatório + Code Owners).

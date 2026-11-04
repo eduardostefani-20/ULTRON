@@ -13,7 +13,7 @@ from ultron.db import get_session
 from ultron.governance import audit
 from ultron.models import ProviderCredential, User
 from ultron.providers import registry
-from ultron.providers.catalog import PROVIDERS, TIERS, default_model, models_for
+from ultron.providers.catalog import PROVIDERS, TIERS, default_model, models_for, suggest_models
 from ultron.providers.router import health
 from ultron.security.vault import encrypt_secret, mask
 from ultron.utils import utcnow
@@ -122,6 +122,19 @@ async def test_integration(provider: str, user: User = Depends(owner), session: 
             models = await prov.list_models()
             ok, message = True, f"conexão OK — {len(models)} modelos disponíveis"
             extra["models"] = models[:200]
+            current = {t: ((cred.meta or {}).get("models") or {}).get(t) or default_model(provider, t) for t in TIERS}
+            chosen = suggest_models(provider, models, current)
+            changed = {t: m for t, m in chosen.items() if current.get(t) != m}
+            if changed:
+                row_ = (await session.execute(select(ProviderCredential).where(ProviderCredential.provider == provider))
+                        ).scalar_one_or_none()
+                if row_ is None:  # chave veio do ambiente: guarda só a escolha de modelos
+                    row_ = ProviderCredential(provider=provider, enabled=True)
+                    session.add(row_)
+                row_.meta = {**(row_.meta or {}), "models": {**((row_.meta or {}).get("models") or {}), **chosen}}
+                registry.invalidate()
+                message += " · modelos ajustados ao que sua conta oferece: " + ", ".join(f"{t}={m}" for t, m in changed.items())
+                extra["models_selected"] = chosen
         elif info.kind == "search":
             from ultron.research.search import search
 

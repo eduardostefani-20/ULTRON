@@ -4,7 +4,10 @@ Câmbio de referência configurável (`ULTRON_USD_BRL_RATE`, padrão R$ 5,50).
 
 ## Infraestrutura
 
-**Opção grátis (recomendada): Oracle Cloud "Always Free"** — VM ARM com até 4 núcleos e 24 GB, disco
+**Opção grátis e sem cartão (recomendada): Hugging Face Spaces + Supabase** — R$ 0/mês, sem cartão.
+IA gratuita com Google Gemini e Groq. Guia: [INSTALACAO_GRATIS_SEM_CARTAO.md](INSTALACAO_GRATIS_SEM_CARTAO.md).
+
+**Opção grátis com cartão (VM mais forte): Oracle Cloud "Always Free"** — VM ARM com até 4 núcleos e 24 GB, disco
 de até 200 GB, HTTPS automático via `sslip.io`: **R$ 0/mês**. Guia: [INSTALACAO_ORACLE.md](INSTALACAO_ORACLE.md).
 Com ela, praticamente os R$ 100 inteiros ficam para IA.
 

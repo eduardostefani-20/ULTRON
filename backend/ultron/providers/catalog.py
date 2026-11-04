@@ -45,15 +45,15 @@ PROVIDERS: dict[str, ProviderInfo] = {
     "openai": ProviderInfo("openai", "OpenAI", "llm", "https://api.openai.com/v1",
                            "https://platform.openai.com/api-keys", openai_compatible=True),
     "gemini": ProviderInfo("gemini", "Google Gemini", "llm", "https://generativelanguage.googleapis.com",
-                           "https://aistudio.google.com/apikey", "Possui camada gratuita com limites."),
+                           "https://aistudio.google.com/apikey", "Camada gratuita SEM cartão (com limites de uso)."),
     "xai": ProviderInfo("xai", "xAI Grok", "llm", "https://api.x.ai/v1", "https://console.x.ai",
                         openai_compatible=True),
     "deepseek": ProviderInfo("deepseek", "DeepSeek", "llm", "https://api.deepseek.com/v1",
                              "https://platform.deepseek.com/api_keys", "Muito barato.", openai_compatible=True),
     "groq": ProviderInfo("groq", "Groq", "llm", "https://api.groq.com/openai/v1", "https://console.groq.com/keys",
-                         "Rápido; possui camada gratuita.", openai_compatible=True),
+                         "Rápido; camada gratuita SEM cartão.", openai_compatible=True),
     "openrouter": ProviderInfo("openrouter", "OpenRouter", "llm", "https://openrouter.ai/api/v1",
-                               "https://openrouter.ai/keys", "Acesso a centenas de modelos.",
+                               "https://openrouter.ai/keys", "Centenas de modelos; alguns gratuitos (sufixo :free).",
                                openai_compatible=True),
     "mistral": ProviderInfo("mistral", "Mistral", "llm", "https://api.mistral.ai/v1",
                             "https://console.mistral.ai/api-keys", openai_compatible=True),
@@ -158,3 +158,47 @@ def compute_cost(provider: str, model_id: str, tokens_in: int, tokens_out: int, 
                  ) -> tuple[float, bool]:
     pin, pout, known = price_for(provider, model_id, overrides)
     return tokens_in / 1e6 * pin + tokens_out / 1e6 * pout, known
+
+
+# Palavras-chave por camada para escolher modelos disponíveis quando os padrões não existem na conta.
+TIER_HINTS: dict[str, dict[str, tuple[tuple[str, ...], tuple[str, ...]]]] = {  # (precisa conter, não pode conter)
+    "gemini": {"fast": (("flash-lite",), ()), "balanced": (("flash",), ("lite",)), "premium": (("pro",), ())},
+    "anthropic": {"fast": (("haiku",), ()), "balanced": (("sonnet",), ()), "premium": (("opus",), ())},
+    "groq": {"fast": (("instant",), ()), "balanced": (("versatile",), ()), "premium": (("120b",), ())},
+    "openai": {"fast": (("nano",), ()), "balanced": (("mini",), ("nano",)), "premium": (("gpt-",), ("mini", "nano"))},
+    "mistral": {"fast": (("small",), ()), "balanced": (("medium",), ()), "premium": (("large",), ())},
+    "deepseek": {"fast": (("chat",), ()), "balanced": (("chat",), ()), "premium": (("reasoner",), ())},
+}
+_NON_CHAT = ("embed", "tts", "audio", "image", "imagen", "veo", "whisper", "guard", "live", "aqa", "moderation",
+             "transcribe", "realtime", "search", "computer", "robotics", "learnlm")
+
+
+def _version_key(model_id: str) -> tuple:
+    import re
+
+    nums = [int(n) for n in re.findall(r"\d+", model_id)]
+    unstable = any(w in model_id for w in ("preview", "exp", "beta", "alpha"))
+    return (not unstable, nums, -len(model_id))
+
+
+def suggest_models(provider: str, available: list[str], current: dict[str, str | None]) -> dict[str, str]:
+    """Mantém os modelos configurados que existem; troca os ausentes pelo melhor equivalente disponível."""
+    hints = TIER_HINTS.get(provider)
+    avail = [m for m in available if not any(w in m.lower() for w in _NON_CHAT)]
+    out: dict[str, str] = {}
+    for tier in TIERS:
+        cur = current.get(tier)
+        if cur and cur in available:
+            out[tier] = cur
+            continue
+        if not hints or not avail:
+            if cur:
+                out[tier] = cur
+            continue
+        must, must_not = hints[tier]
+        cands = [m for m in avail if all(w in m.lower() for w in must) and not any(w in m.lower() for w in must_not)]
+        if cands:
+            out[tier] = sorted(cands, key=_version_key, reverse=True)[0]
+        elif cur:
+            out[tier] = cur
+    return out

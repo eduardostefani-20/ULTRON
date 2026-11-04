@@ -155,3 +155,17 @@ def test_pricing_known_unknown_and_override():
     cost, _ = compute_cost("anthropic", "claude-opus-5-5", 1_000_000, 1_000_000)
     assert cost == pytest.approx(24.0)
     assert price_for("x", "y", {"x:y": {"input": 1, "output": 2}}) == (1.0, 2.0, True)
+
+
+def test_suggest_models_replaces_missing_with_best_available():
+    from ultron.providers.catalog import suggest_models
+
+    available = ["gemini-3.0-flash", "gemini-3.0-flash-lite", "gemini-3.0-pro-preview", "gemini-3.0-pro",
+                 "gemini-embedding-002", "gemini-3.0-flash-image", "gemini-2.0-flash"]
+    out = suggest_models("gemini", available, {"fast": "gemini-2.5-flash-lite", "balanced": "gemini-2.0-flash",
+                                                "premium": "gemini-2.5-pro"})
+    assert out == {"fast": "gemini-3.0-flash-lite", "balanced": "gemini-2.0-flash", "premium": "gemini-3.0-pro"}
+    groq = suggest_models("groq", ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "openai/gpt-oss-120b",
+                                   "whisper-large-v3"], {"fast": "x", "balanced": "y", "premium": "z"})
+    assert groq == {"fast": "llama-3.1-8b-instant", "balanced": "llama-3.3-70b-versatile",
+                    "premium": "openai/gpt-oss-120b"}

@@ -91,6 +91,10 @@ async def load_credentials(session: AsyncSession) -> dict[str, Credential]:
         if info is None:
             continue
         if info.key_required and not key:
+            if r.provider in creds:  # chave do ambiente + preferências salvas no app (modelos, URL)
+                creds[r.provider].meta = r.meta or {}
+                if r.base_url:
+                    creds[r.provider].base_url = r.base_url
             continue
         creds[r.provider] = Credential(r.provider, key, r.base_url or info.base_url, "integrations", r.meta or {})
     return creds

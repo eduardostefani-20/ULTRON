@@ -112,6 +112,13 @@ async def run_selftest(actor: str) -> dict:
         secret_file.unlink(missing_ok=True)
         check("sandbox não lê arquivos privados do servidor", "conteudo-privado" not in r["stdout"],
               f"usuário do sandbox: {r['isolation'].get('user')}")
+        env_path = f"/proc/{os.getpid()}/environ"
+        code = (f"import sys\ntry:\n    d = open({env_path!r}, 'rb').read()\n    print('LEU', len(d))\n"
+                "except Exception as e:\n    print('NEGADO', type(e).__name__)")
+        r = await sandbox.run([sys.executable, "-c", code], Path(td), timeout=30, label="selftest:environ", record=True)
+        sandbox.cleanup(r)
+        check("sandbox não lê o ambiente do servidor (chaves e banco)", "NEGADO" in r["stdout"],
+              r["stdout"].strip()[:80])
     # 8. suíte de testes de segurança executada no sandbox, sobre o branch estável
     try:
         ws = await get_workspace()

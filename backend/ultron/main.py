@@ -44,6 +44,21 @@ async def bootstrap() -> None:
             log.error("arquivos de governança ausentes: %s", info["missing"])
 
 
+def protect_process() -> None:
+    """Impede que outros processos do mesmo usuário (ex.: o sandbox, quando o servidor não roda como
+    root) leiam o ambiente/memória do servidor via /proc ou ptrace. Filhos voltam a ser normais no exec."""
+    import sys
+
+    if not sys.platform.startswith("linux"):
+        return
+    try:
+        import ctypes
+
+        ctypes.CDLL(None, use_errno=True).prctl(4, 0, 0, 0, 0)  # PR_SET_DUMPABLE = 4
+    except Exception:
+        log.warning("não foi possível marcar o processo como não inspecionável")
+
+
 def harden_data_dir() -> None:
     """Arquivos do servidor privados por padrão; o diretório de dados é apenas atravessável para que o
     sandbox (usuário 'nobody') alcance as worktrees sem conseguir ler banco, chaves ou memórias."""
@@ -64,6 +79,7 @@ def harden_data_dir() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     s = get_settings()
+    protect_process()
     harden_data_dir()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     s.resolved_secret_key()  # falha cedo em produção sem chave

@@ -30,6 +30,33 @@ jobs:
         working-directory: backend
         run: python -m pytest -q
 
+  backend-postgres:
+    name: Backend no PostgreSQL (Supabase)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ultron
+          POSTGRES_PASSWORD: ultron
+          POSTGRES_DB: ultron_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ultron" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: |
+          pip install -r backend/requirements.txt
+          pip install --no-deps -e backend
+      - name: Testes contra PostgreSQL
+        working-directory: backend
+        env:
+          ULTRON_TEST_DATABASE_URL: postgresql://ultron:ultron@127.0.0.1:5432/ultron_test
+        run: python -m pytest -q
+
   frontend:
     name: Frontend (tipos + build)
     runs-on: ubuntu-latest

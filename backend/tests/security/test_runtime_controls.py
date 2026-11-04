@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import text
-from sqlalchemy.exc import DatabaseError
+from sqlalchemy.exc import DBAPIError
 
 from ultron.db import session_scope
 from ultron.evolution import sandbox
@@ -17,10 +17,10 @@ from ultron.settings_store import SettingPermissionError, set_setting, system_se
 
 async def test_audit_log_rejects_update_and_delete(app_env):
     await audit.record("teste", "evento.um", "x", {"a": 1})
-    with pytest.raises(DatabaseError):
+    with pytest.raises(DBAPIError):
         async with session_scope() as s:
             await s.execute(text("UPDATE audit_log SET action='adulterado'"))
-    with pytest.raises(DatabaseError):
+    with pytest.raises(DBAPIError):
         async with session_scope() as s:
             await s.execute(text("DELETE FROM audit_log"))
     async with session_scope() as s:
@@ -32,7 +32,10 @@ async def test_audit_chain_detects_tampering(app_env):
         await audit.record("teste", f"evento.{i}", "x", {"i": i})
     async with session_scope() as s:
         # simula adulteração por alguém com acesso direto ao banco (remove o trigger)
-        await s.execute(text("DROP TRIGGER audit_log_no_update"))
+        from tests.conftest import is_postgres
+
+        await s.execute(text("DROP TRIGGER audit_log_no_update_delete ON audit_log" if is_postgres()
+                             else "DROP TRIGGER audit_log_no_update"))
         await s.execute(text("UPDATE audit_log SET details='{\"i\": 99}' WHERE action='evento.1'"))
     async with session_scope() as s:
         res = await audit.verify_chain(s)
@@ -189,3 +192,28 @@ async def test_sandbox_cannot_read_server_private_files(tmp_path):
     r = await sandbox.run([sys.executable, "-c", f"print(open({str(private)!r}).read())"], work, timeout=30, record=False)
     sandbox.cleanup(r)
     assert "dados-pessoais" not in r["stdout"] and r["isolation"]["user"] == "nobody"
+
+
+def test_non_dumpable_process_hides_environment_from_same_user(tmp_path):
+    """Mesmo sem root: um processo marcado como não inspecionável não tem o ambiente lido por outro
+    processo do mesmo usuário (cenário do Hugging Face, onde o sandbox e o servidor têm o mesmo usuário)."""
+    import os
+    import subprocess
+
+    if os.geteuid() != 0:
+        pytest.skip("o teste troca de usuário e precisa de root")
+    parent = (
+        "import ctypes,os,subprocess,sys\n"
+        "os.environ['SEGREDO']='sk-segredo-do-servidor'\n"
+        "ctypes.CDLL(None).prctl(4,0,0,0,0)\n"
+        "code=\"import sys\\ntry:\\n print(open('/proc/%d/environ','rb').read())\\nexcept Exception as e:\\n print('NEGADO')\" % os.getpid()\n"
+        "print(subprocess.run([sys.executable,'-c',code],capture_output=True,text=True).stdout)\n"
+    )
+
+    def as_nobody():
+        os.setgid(65534)
+        os.setuid(65534)
+
+    r = subprocess.run([sys.executable, "-c", parent], capture_output=True, text=True, preexec_fn=as_nobody,
+                       cwd=tmp_path, env={"PATH": os.environ["PATH"], "SEGREDO": "sk-segredo-do-servidor"})
+    assert "NEGADO" in r.stdout and "sk-segredo" not in r.stdout, r.stdout + r.stderr
