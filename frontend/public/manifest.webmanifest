@@ -1,0 +1,22 @@
+{
+  "name": "ULTRON — Central de Inteligência",
+  "short_name": "ULTRON",
+  "description": "Inteligência artificial autônoma, multiagente e autoevolutiva.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050b18",
+  "theme_color": "#050b18",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Chat", "url": "/chat/" },
+    { "name": "Autoevolução", "url": "/evolution/" },
+    { "name": "Missões", "url": "/missions/" }
+  ]
+}
