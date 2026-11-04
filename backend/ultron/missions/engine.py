@@ -307,9 +307,9 @@ async def _execute_dag(mission_id: str, user_id: str | None) -> str:
                 return "STALLED"
             return "DONE"
 
-        async def _guarded(tid: str) -> None:
+        async def _guarded(tid: str, appr: set[str] = approved) -> None:
             async with sem:
-                await _run_task(mission_id, tid, approved, user_id)
+                await _run_task(mission_id, tid, appr, user_id)
 
         await asyncio.gather(*[_guarded(tid) for tid in ready])
 

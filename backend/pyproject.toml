@@ -18,14 +18,14 @@ dependencies = [
   "cryptography>=43",
   "beautifulsoup4>=4.12",
   "anthropic>=2.0",
-]
-
-[project.optional-dependencies]
-dev = [
+  # usados em produção pelo Evaluation Engine (testes e lint no sandbox)
   "pytest>=8",
   "pytest-asyncio>=0.24",
   "ruff>=0.6",
 ]
+
+[project.optional-dependencies]
+dev = []
 
 [build-system]
 requires = ["setuptools>=68"]

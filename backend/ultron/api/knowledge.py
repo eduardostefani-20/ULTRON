@@ -13,7 +13,16 @@ from ultron.api.common import row
 from ultron.api.deps import current_user
 from ultron.db import get_session
 from ultron.governance import audit
-from ultron.memory.service import KINDS, STATUSES, MemoryError_, apply_retention, forget, recall, remember, stats
+from ultron.memory.service import (
+    KINDS,
+    STATUSES,
+    MemoryError_,
+    apply_retention,
+    forget,
+    recall,
+    remember,
+    stats,
+)
 from ultron.models import MemoryItem, ResearchReport, User
 from ultron.research.service import deep_research
 

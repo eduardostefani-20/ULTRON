@@ -6,7 +6,14 @@ import asyncio
 import logging
 
 from ultron.db import session_scope
-from ultron.llm.service import BudgetContext, ChatMessage, NoProviderConfigured, TaskProfile, complete, complete_json
+from ultron.llm.service import (
+    BudgetContext,
+    ChatMessage,
+    NoProviderConfigured,
+    TaskProfile,
+    complete,
+    complete_json,
+)
 from ultron.models import ResearchReport
 from ultron.research.extract import html_to_text, reliability, wrap_untrusted
 from ultron.research.search import SearchHit, search

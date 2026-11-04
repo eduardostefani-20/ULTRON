@@ -253,7 +253,7 @@ async def monitor() -> list[dict]:
         auto_rb = await get_setting(s, "publication.auto_rollback")
         snap = await snapshot(s, hours=1) if pubs else None
         items = [(p.id, p.metrics_before or {}, p.monitor_until, p.published_at) for p in pubs]
-    for pid, before, until, published_at in items:
+    for pid, before, until, _published_at in items:
         after = {"llm_error_rate": snap["llm"]["error_rate"], "llm_calls": snap["llm"]["calls"],
                  "errors": sum(e["count"] for e in snap["errors"])}
         regression = (after["llm_calls"] >= 10 and after["llm_error_rate"] > (before.get("llm_error_rate") or 0) + 0.25) \
