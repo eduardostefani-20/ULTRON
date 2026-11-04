@@ -66,7 +66,8 @@ de grafo próprios, com estado e governança no banco do ULTRON).
 ## 5. Resultados reais obtidos nesta construção
 
 - O ULTRON **clonou o próprio repositório e executou a própria suíte inteira dentro do sandbox**
-  (usuário `nobody`, rede isolada por namespace, sem segredos): 158 passaram, 1 pulado por design.
+  (usuário `nobody`, rede isolada por namespace, sem segredos): dos 160 testes, 159 passaram e 1 foi
+  pulado por design (o teste de rebaixamento de privilégios não se aplica dentro do próprio sandbox).
 - Servidor completo + navegador (Playwright, viewport de celular): criação de conta, as 14 telas,
   chat, memória; o **scheduler iniciou sozinho** um ciclo sobre o código real do ULTRON: 159 testes do
   branch estável verdes, **51 diagnósticos reais** (módulos sem teste dedicado, funções complexas,
