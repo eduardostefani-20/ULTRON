@@ -29,3 +29,8 @@ secret.key
 *.log
 test-results/
 playwright-report/
+
+# Instalação no notebook
+.versao
+ENDERECO-CELULAR.txt
+.ccr-ca.crt

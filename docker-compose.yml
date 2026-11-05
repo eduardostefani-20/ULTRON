@@ -1,14 +1,36 @@
-# Execução em VPS/computador: docker compose up -d   (depois acesse http://SEU_IP:8000)
+# ULTRON no seu computador (Windows, Mac ou Linux) com o Docker Desktop.
+# Não precisa mexer aqui: dê dois cliques em INICIAR-ULTRON.bat (Windows) ou rode ./scripts/iniciar.sh (Mac/Linux).
+# Guia completo: docs/INSTALACAO_NOTEBOOK.md
+name: ultron
+
 services:
   ultron:
     build: .
     restart: unless-stopped
     ports:
       - "8000:8000"
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      ULTRON_TUNNEL_METRICS_URL: http://tunnel:2000/quicktunnel
     volumes:
       - ultron-data:/data
-    # Para isolamento de rede do sandbox via namespaces dentro do contêiner, o host precisa permitir
-    # user namespaces; em último caso use: security_opt: ["seccomp=unconfined"] (avalie o risco).
+    # permite ao sandbox do ULTRON criar um namespace de rede vazio para o código experimental
+    # (o perfil seccomp padrão do Docker bloqueia unshare); o contêiner continua isolado do computador
+    security_opt:
+      - seccomp=unconfined
+
+  # Endereço HTTPS temporário para usar no celular (de qualquer lugar) e instalar o app.
+  # Ligado por COMPOSE_PROFILES=celular no .env (padrão dos scripts). O endereço muda a cada reinício:
+  # o ULTRON mostra o link e o QR code atual na tela inicial.
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles: ["celular"]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --metrics 0.0.0.0:2000 --url http://ultron:8000
+    depends_on:
+      - ultron
+
 volumes:
   ultron-data:

@@ -19,6 +19,7 @@ toquem, usando as regras do branch base).
 | Arquivos do servidor | `umask 077`; diretório de dados só atravessável; banco e chave em 0600 — o código experimental não lê memórias nem credenciais. |
 | Rede externa | Bloqueio de SSRF (IPs privados, loopback, link-local, metadados de nuvem, IPv6 mapeado), validação a cada redirecionamento, limite de tamanho e tempo. |
 | Conteúdo externo | Marcado como dado não confiável; frases de injeção sinalizadas; agentes instruídos de que conteúdo externo não tem autoridade — e, mesmo que obedecessem, as ações continuam sujeitas à governança em código. |
+| Instalação no notebook | Scripts `*.bat`/`*.ps1`/`scripts/**` e `docker-compose*.yml` rodam no computador do dono, fora do isolamento — por isso são caminhos **proibidos** para agentes (não podem ser alterados nem por proposta aprovada). O atualizador lê o token de dentro do app e não o grava em disco. O endereço do túnel só aparece para usuários logados. |
 | Publicação | Risco calculado pelo diff real; aprovação vinculada ao hash da árvore; revalidação de árvore, base e política imediatamente antes do merge; rollback por revert; monitoramento. |
 | Integridade | Hash dos arquivos de governança registrado na auditoria a cada inicialização. |
 | Interface | CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`; markdown renderizado sem `innerHTML`; service worker nunca guarda respostas da API. |

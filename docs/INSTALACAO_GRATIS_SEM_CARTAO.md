@@ -1,4 +1,9 @@
-# Instalação grátis e SEM cartão (Hugging Face + Supabase + Gemini)
+# Instalação no Hugging Face + Supabase + Gemini
+
+> **Atenção (nov/2026):** o Hugging Face passou a exigir assinatura **PRO** para Spaces Docker
+> (erro `402 Payment Required` na implantação). Sem cartão, use o
+> **[ULTRON no notebook](INSTALACAO_NOTEBOOK.md)**. O passo 2 (Supabase) continua válido para guardar
+> os dados na nuvem em qualquer instalação.
 
 Custo: **R$ 0**, sem cartão de crédito em nenhum serviço. Tudo pelo navegador do celular.
 Tempo: ~30 minutos.

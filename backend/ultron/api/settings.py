@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from datetime import timedelta
 from typing import Any
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -52,6 +54,25 @@ class SettingsIn(BaseModel):
 @router.get("/health")
 async def health_check():
     return {"status": "ok", "service": "ultron", "version": __version__}
+
+
+_TUNNEL_HOST = re.compile(r"[a-z0-9-]{1,80}\.trycloudflare\.com")
+
+
+@router.get("/system/access")
+async def access_info(user: User = Depends(current_user)):
+    """Endereço HTTPS temporário do túnel (instalação no notebook), para abrir o app no celular."""
+    url = get_settings().tunnel_metrics_url
+    host = ""
+    if url:
+        try:  # chamada interna fixa (configurada pelo operador), sem proxy
+            async with httpx.AsyncClient(timeout=3, trust_env=False, follow_redirects=False) as c:
+                r = await c.get(url)
+            host = str((r.json() or {}).get("hostname") or "").strip().lower()
+        except Exception:
+            host = ""
+    ok = bool(_TUNNEL_HOST.fullmatch(host))
+    return {"tunnel_url": f"https://{host}" if ok else None, "tunnel_configured": bool(url)}
 
 
 @router.get("/settings")

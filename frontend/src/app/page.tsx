@@ -1,9 +1,10 @@
 "use client";
 
-import { Activity, AlertTriangle, Dna, MessageSquare, Plug, Target } from "lucide-react";
+import { Activity, AlertTriangle, Dna, MessageSquare, Plug, Smartphone, Target } from "lucide-react";
 import Link from "next/link";
 
 import { Meter } from "@/components/charts";
+import { QrCode } from "@/components/qrcode";
 import Shell from "@/components/Shell";
 import { Badge, Button, Card, Empty, ErrorNote, Note, PageHeader, Spinner, Stat, StatusPill } from "@/components/ui";
 import { ago, brl, num, pct, usd } from "@/lib/format";
@@ -23,6 +24,28 @@ type Overview = {
   system: { uptime_s: number; max_rss_mb: number; disk_free_gb: number };
 };
 
+/** Instalação no notebook: link e QR do túnel HTTPS atual, para abrir o app no celular. */
+function PhoneAccess() {
+  const { data } = useApi<{ tunnel_url: string | null }>("/api/system/access", 60000);
+  const url = data?.tunnel_url;
+  if (!url || (typeof window !== "undefined" && window.location.origin === url)) return null;
+  return (
+    <Card className="mb-4" title={<span className="flex items-center gap-2"><Smartphone className="h-4 w-4 text-lime" /> Abrir no celular</span>}>
+      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+        <QrCode value={url} />
+        <div className="min-w-0 text-sm">
+          <p className="text-ink-2">Aponte a câmera do celular para o código, ou abra este endereço:</p>
+          <a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all font-medium text-lime underline">{url}</a>
+          <p className="mt-2 text-xs text-muted">
+            No celular, use &quot;Adicionar à tela inicial&quot; para instalar o app. O endereço muda quando o
+            computador reinicia; esta tela sempre mostra o atual.
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 const SEV: Record<string, string> = { critical: "critical", high: "serious", medium: "warning", low: "info", info: "neutral" };
 
 function Dashboard() {
@@ -35,6 +58,8 @@ function Dashboard() {
     <>
       <PageHeader title={`Olá, ${data.user.name}`} subtitle="Visão geral da central de inteligência"
         actions={<Link href="/chat/"><Button variant="primary"><MessageSquare className="h-4 w-4" /> Conversar</Button></Link>} />
+
+      <PhoneAccess />
 
       {data.providers.length === 0 && (
         <div className="mb-4">

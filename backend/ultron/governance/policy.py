@@ -45,6 +45,16 @@ FORBIDDEN_PATHS: tuple[str, ...] = (
     "backend/tests/security/**",
     ".github/**",
     "deploy/**",  # scripts executados como root na VM de produção
+    # instalação no notebook: rodam no computador do dono, fora de qualquer isolamento
+    "docker-compose*.yml",  # define privilégios e pastas do contêiner no computador do dono
+    "scripts/**",
+    "*.bat",
+    "**/*.bat",
+    "*.cmd",
+    "**/*.cmd",
+    "*.ps1",
+    "**/*.ps1",
+    ".gitattributes",
     "CODEOWNERS",
     ".git/**",
     "**/.git/**",
@@ -79,10 +89,8 @@ HIGH_RISK_PATHS: tuple[str, ...] = (
     "frontend/public/sw.js",
     "Dockerfile",
     "**/Dockerfile",
-    "docker-compose*.yml",
     "render.yaml",
     "netlify.toml",
-    "scripts/**",
 )
 
 # Baixo risco: documentação, interface e testes novos.

@@ -71,6 +71,33 @@ jobs:
           npm run typecheck
           npm run build
 
+  windows-scripts:
+    name: Scripts do Windows (notebook)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sintaxe e funções no Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($f in Get-ChildItem scripts\windows\*.ps1) {
+            $tokens = $null; $errs = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$tokens, [ref]$errs)
+            if ($errs.Count) { $errs | ForEach-Object { Write-Host "$($f.Name):$($_.Extent.StartLineNumber) $($_.Message)" }; exit 1 }
+            Write-Host "$($f.Name): sintaxe ok"
+          }
+          if ((Get-Content scripts\windows\iniciar.ps1 -Raw) -notmatch 'Configuração criada') { throw 'acentos lidos errado (BOM?)' }
+          foreach ($b in 'INICIAR', 'ATUALIZAR', 'PARAR') {
+            if (-not (Test-Path "$b-ULTRON.bat")) { throw "falta $b-ULTRON.bat" }
+          }
+          Set-Content .env "COMPOSE_PROFILES=celular`nULTRON_SETUP_TOKEN=abc123" -Encoding ASCII
+          . .\scripts\windows\comum.ps1
+          if ((Novo-Segredo 32).Length -ne 64) { throw 'segredo com tamanho errado' }
+          if ((Novo-Segredo 32) -eq (Novo-Segredo 32)) { throw 'segredo repetido' }
+          if ((Ler-Env 'ULTRON_SETUP_TOKEN') -ne 'abc123') { throw 'Ler-Env falhou' }
+          if ((Ler-Env 'NAO_EXISTE') -ne '') { throw 'Ler-Env deveria vir vazio' }
+          Write-Host 'funções ok'
+
   governance-guard:
     name: Guarda de governança (PRs do ULTRON)
     if: github.event_name == 'pull_request' && (startsWith(github.head_ref, 'evolution/') || startsWith(github.head_ref, 'rollback/'))

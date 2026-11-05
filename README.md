@@ -14,18 +14,21 @@ independente e publica de forma controlada**, com aprovação humana e rollback.
 | Interface | Next.js 16 · React 19 · TypeScript · Tailwind 4 |
 | Dados | SQLite em disco persistente (padrão) ou PostgreSQL (Supabase/Render) |
 | IA | Anthropic, OpenAI, Google Gemini, xAI, DeepSeek, Groq, OpenRouter, Mistral, Ollama |
-| Testes | 173 testes automatizados (SQLite e PostgreSQL) (incl. testes que atacam os controles de segurança) |
+| Testes | 198 testes automatizados (SQLite e PostgreSQL) (incl. testes que atacam os controles de segurança) |
 
-## Começar pelo celular
+## Como instalar
 
-- **Grátis e sem cartão (recomendado):** [docs/INSTALACAO_GRATIS_SEM_CARTAO.md](docs/INSTALACAO_GRATIS_SEM_CARTAO.md)
-  — Hugging Face + Supabase + Gemini, instalado com um toque pelo GitHub Actions.
-- **Grátis com cartão (VM mais forte):** [docs/INSTALACAO_ORACLE.md](docs/INSTALACAO_ORACLE.md) — Oracle Cloud.
-- **Pago (~R$ 40/mês):** [docs/INSTALACAO_CELULAR.md](docs/INSTALACAO_CELULAR.md) — Render.
+- **No seu notebook, grátis e sem cartão (recomendado):** [docs/INSTALACAO_NOTEBOOK.md](docs/INSTALACAO_NOTEBOOK.md)
+  — Docker Desktop + dois cliques em `INICIAR-ULTRON.bat`; use no celular pelo QR code da tela inicial.
+- **Grátis com cartão (VM na nuvem 24h):** [docs/INSTALACAO_ORACLE.md](docs/INSTALACAO_ORACLE.md) — Oracle Cloud.
+- **Render:** [docs/INSTALACAO_CELULAR.md](docs/INSTALACAO_CELULAR.md) — plano gratuito (com banco no Supabase e
+  ciclos de autoevolução no GitHub Actions) ou pago (~R$ 40/mês).
+- Hugging Face: [docs/INSTALACAO_GRATIS_SEM_CARTAO.md](docs/INSTALACAO_GRATIS_SEM_CARTAO.md) — hoje exige assinatura PRO.
 
 ## Documentação
 
-- [Instalação grátis e sem cartão (Hugging Face + Supabase)](docs/INSTALACAO_GRATIS_SEM_CARTAO.md)
+- [Instalação no notebook (grátis, sem cartão)](docs/INSTALACAO_NOTEBOOK.md)
+- [Instalação no Hugging Face + Supabase (requer HF PRO)](docs/INSTALACAO_GRATIS_SEM_CARTAO.md)
 - [Instalação grátis na Oracle Cloud](docs/INSTALACAO_ORACLE.md)
 - [Instalação no Render (pago)](docs/INSTALACAO_CELULAR.md)
 - [Arquitetura](docs/ARQUITETURA.md)

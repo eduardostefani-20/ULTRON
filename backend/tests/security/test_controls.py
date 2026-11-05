@@ -22,6 +22,10 @@ from ultron.tools.netguard import BlockedURL, safe_get, validate_url
     ".github/workflows/ci.yml", "deploy/oracle/update.sh", "deploy/oracle/cloud-init.sh", "CODEOWNERS", ".env", "backend/.env", "frontend/.env.local", ".git/config",
     "../fora.py", "/etc/passwd", "backend/../../x", "a\\b.py", "x\x00.py", "backend/data/ultron.db",
     "frontend/public/logo.png",
+    # notebook: executados no computador do dono, fora do Docker
+    "INICIAR-ULTRON.bat", "ATUALIZAR-ULTRON.bat", "scripts/windows/atualizar.ps1", "scripts/windows/novo.ps1",
+    "scripts/atualizar.sh", "scripts/novo.sh", "docker-compose.yml", "docker-compose.override.yml", "x/rodar.cmd",
+    ".gitattributes",
 ])
 def test_agent_cannot_write_protected_or_unsafe_paths(path):
     assert not check_agent_write(path).allowed

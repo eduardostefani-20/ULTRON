@@ -56,6 +56,8 @@ class Settings(BaseSettings):
     cors_origins: str = Field(default="", alias="ULTRON_CORS_ORIGINS")
     frontend_dir: Path = Field(default=REPO_ROOT / "frontend" / "out", alias="ULTRON_FRONTEND_DIR")
     public_url: str = Field(default="", alias="ULTRON_PUBLIC_URL")
+    # endereço interno das métricas do túnel cloudflared (instalação no notebook): mostra o link/QR do celular
+    tunnel_metrics_url: str = Field(default="", alias="ULTRON_TUNNEL_METRICS_URL")
 
     access_token_minutes: int = Field(default=60, alias="ULTRON_ACCESS_TOKEN_MINUTES")
     refresh_token_days: int = Field(default=30, alias="ULTRON_REFRESH_TOKEN_DAYS")
