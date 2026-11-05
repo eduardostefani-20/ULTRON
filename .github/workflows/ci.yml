@@ -86,7 +86,9 @@ jobs:
             if ($errs.Count) { $errs | ForEach-Object { Write-Host "$($f.Name):$($_.Extent.StartLineNumber) $($_.Message)" }; exit 1 }
             Write-Host "$($f.Name): sintaxe ok"
           }
-          if ((Get-Content scripts\windows\iniciar.ps1 -Raw) -notmatch 'Configuração criada') { throw 'acentos lidos errado (BOM?)' }
+          # o passo do CI é lido sem BOM: o texto esperado é montado só com ASCII
+          $esperado = 'Configura' + [char]0x00E7 + [char]0x00E3 + 'o criada'
+          if (-not (Get-Content scripts\windows\iniciar.ps1 -Raw).Contains($esperado)) { throw 'acentos lidos errado (BOM?)' }
           foreach ($b in 'INICIAR', 'ATUALIZAR', 'PARAR') {
             if (-not (Test-Path "$b-ULTRON.bat")) { throw "falta $b-ULTRON.bat" }
           }
@@ -96,7 +98,7 @@ jobs:
           if ((Novo-Segredo 32) -eq (Novo-Segredo 32)) { throw 'segredo repetido' }
           if ((Ler-Env 'ULTRON_SETUP_TOKEN') -ne 'abc123') { throw 'Ler-Env falhou' }
           if ((Ler-Env 'NAO_EXISTE') -ne '') { throw 'Ler-Env deveria vir vazio' }
-          Write-Host 'funções ok'
+          Write-Host 'funcoes ok'
 
   governance-guard:
     name: Guarda de governança (PRs do ULTRON)
