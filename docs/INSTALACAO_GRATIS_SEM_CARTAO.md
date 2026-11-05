@@ -53,6 +53,17 @@ No navegador, abra o repositório **eduardostefani-20/ULTRON** → **Settings** 
 | `ULTRON_SETUP_TOKEN` | uma frase secreta inventada por você (pedida no primeiro acesso) |
 | `ULTRON_GH_TOKEN` | o token `github_pat_...` do passo 1 |
 
+### Testar a conexão com o banco (1 min)
+
+No repositório: aba **Actions** → **Testar conexão com o banco** → **Run workflow**. Em ~30 segundos:
+
+- ✅ **"Banco de dados conectado (PostgreSQL ...) — leitura e escrita OK"**: pronto, siga em frente.
+- ❌ A mensagem diz o que corrigir: senha ainda como `[YOUR-PASSWORD]`, senha errada, senha com
+  símbolos, endereço de "conexão direta" ou "Transaction pooler" em vez de **Session pooler**, ou
+  projeto pausado. Corrija o segredo `ULTRON_DATABASE_URL` (Settings → Secrets → editar) e teste de novo.
+
+A instalação do passo 5 também faz esse teste antes de publicar e não continua se o banco falhar.
+
 ## Passo 5 — Instalar com um toque
 
 1. No repositório: aba **Actions** → **Implantar no Hugging Face** → **Run workflow** → escolha o

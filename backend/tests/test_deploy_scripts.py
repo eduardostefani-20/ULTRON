@@ -151,3 +151,33 @@ def test_hf_deploy_never_rotates_secret_key_and_requires_secrets():
 def test_hf_bootstrap_has_valid_syntax():
     r = subprocess.run(["bash", "-n", str(ROOT / "deploy" / "huggingface" / "bootstrap.sh")], capture_output=True)
     assert r.returncode == 0
+
+
+POOLER = "postgresql://postgres.abcdefgh:SenhaForte123@aws-0-sa-east-1.pooler.supabase.com:5432/postgres"
+
+
+@pytest.mark.parametrize("url,fragment", [
+    ("", "vazio"),
+    (POOLER.replace("SenhaForte123", "[YOUR-PASSWORD]"), "YOUR-PASSWORD"),
+    ("mysql://x:y@h/db", "postgresql://"),
+    ("postgresql://postgres.x:Se@nha#1@aws-0-sa-east-1.pooler.supabase.com:5432/postgres", "símbolos"),
+    ("postgresql://postgres:Senha123@db.abcdefgh.supabase.co:5432/postgres", "Session pooler"),
+    (POOLER.replace(":5432/", ":6543/"), "Transaction pooler"),
+])
+def test_database_url_common_mistakes_are_explained(url, fragment):
+    errors = _load_hf_deploy().validate_database_url(url)
+    assert errors and any(fragment in e for e in errors)
+
+
+def test_valid_session_pooler_url_passes():
+    assert _load_hf_deploy().validate_database_url(POOLER) == []
+
+
+@pytest.mark.skipif(not os.environ.get("ULTRON_TEST_DATABASE_URL"), reason="sem PostgreSQL de teste")
+def test_check_database_connects_for_real():
+    mod = _load_hf_deploy()
+    version = mod.check_database(os.environ["ULTRON_TEST_DATABASE_URL"])
+    assert version.startswith("PostgreSQL")
+    bad = os.environ["ULTRON_TEST_DATABASE_URL"].replace("ultron:ultron@", "ultron:senhaerrada@")
+    with pytest.raises(SystemExit, match="senha incorreta"):
+        mod.check_database(bad)

@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install -q huggingface_hub
+      - run: pip install -q huggingface_hub asyncpg
       - name: Criar/atualizar o Space e reiniciar com o código novo
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}

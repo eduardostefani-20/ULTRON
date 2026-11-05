@@ -1,0 +1,22 @@
+name: Testar conexão com o banco
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Testar banco de dados (Supabase)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -q asyncpg
+      - name: Conectar ao banco
+        env:
+          ULTRON_DATABASE_URL: ${{ secrets.ULTRON_DATABASE_URL }}
+        run: python deploy/huggingface/deploy.py check-db
