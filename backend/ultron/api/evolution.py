@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ultron.api.common import iso, row
 from ultron.api.deps import current_user, owner
+from ultron.config import get_settings
 from ultron.db import get_session, session_scope
 from ultron.evolution import sandbox
 from ultron.evolution.cycle import PHASE_LABEL, PHASES, develop_now
@@ -105,6 +106,7 @@ async def evolution_status(user: User = Depends(current_user), session: AsyncSes
         "sandbox": {"isolation": sandbox.isolation_level(), "capabilities": sandbox.capabilities()},
         "budget": {"evolution_spent_usd": b["evolution_spent_usd"], "evolution_limit_usd": b["evolution_limit_usd"]},
         "settings": st,
+        "runner": get_settings().evolution_runner,
     }
 
 

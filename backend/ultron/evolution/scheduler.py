@@ -165,8 +165,8 @@ class Scheduler:
             if await _acquire(name, timeout):
                 self._spawn(name, JOB_FUNCS[name]())
                 started.append(name)
-        # autoevolução contínua
-        if not self._busy("evolution_cycle"):
+        # autoevolução contínua (no modo "github" os ciclos rodam no GitHub Actions, não aqui)
+        if get_settings().evolution_runner != "github" and not self._busy("evolution_cycle"):
             async with session_scope() as s:
                 enabled = await get_setting(s, "evolution.enabled")
                 paused = await get_setting(s, "evolution.paused")
@@ -199,6 +199,8 @@ class Scheduler:
         return f"ciclo {cycle_id[:8]} retomado: {res.get('status')}"
 
     async def run_now(self) -> str:
+        if get_settings().evolution_runner == "github":
+            return await self._dispatch_github()
         if self._busy("evolution_cycle"):
             raise RuntimeError("um ciclo de evolução já está em execução")
         if not await _acquire("evolution_cycle", 60):
@@ -211,6 +213,24 @@ class Scheduler:
 
         self._spawn("evolution_cycle", go())
         return cid
+
+    async def _dispatch_github(self) -> str:
+        from ultron.evolution.github import GitHubError, client_from_settings
+        from ultron.evolution.workspace import get_workspace
+
+        gh = await client_from_settings()
+        if gh is None:
+            raise RuntimeError("configure o token do GitHub em Integrações para disparar o ciclo no GitHub Actions")
+        ws = await get_workspace(ensure=False)
+        ref = ws.base_branch or get_settings().git_base_branch
+        if not ref:
+            raise RuntimeError("defina ULTRON_GIT_BASE_BRANCH para disparar o ciclo no GitHub Actions")
+        try:
+            await gh.dispatch_workflow("evolution.yml", ref)
+        except GitHubError as e:
+            raise RuntimeError("o GitHub recusou disparar o ciclo — o token precisa da permissão "
+                               f"'Actions: Read and write' ({str(e)[:160]})") from e
+        return "github-actions"
 
     async def _loop(self) -> None:
         tick = get_settings().scheduler_tick_seconds

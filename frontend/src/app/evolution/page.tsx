@@ -23,7 +23,7 @@ type Status = { enabled: boolean; paused: boolean; interval_minutes: number; aut
   proposals_by_status: Record<string, number>; pending_approvals: number; open_diagnostics: number;
   scheduler: { running: boolean; jobs: Record<string, { last_run_at: string | null; last_status: string; running: boolean }> };
   sandbox: { isolation: string; capabilities: Record<string, boolean> };
-  budget: { evolution_spent_usd: number; evolution_limit_usd: number } };
+  budget: { evolution_spent_usd: number; evolution_limit_usd: number }; runner?: string };
 type Diagnostic = { id: string; category: string; severity: string; title: string; detail: string; suggestion: string; research: string;
   occurrences: number; last_seen_at: string; status: string; evidence: Record<string, unknown> };
 type Proposal = { id: string; code: string; title: string; kind: string; strategy: string; source: string; status: string; risk_level: string;
@@ -129,6 +129,10 @@ function Overview({ st, reload }: { st: Status; reload: () => void }) {
           )}
         </div>
         <div className="mt-3"><ErrorNote error={act.error} /></div>
+        {st.runner === "github" && (
+          <div className="mt-3"><Note>Os ciclos rodam no <b>GitHub Actions</b> (máquina isolada, a cada 8 h). "Rodar ciclo agora"
+            dispara um ciclo lá; acompanhe em Actions → Ciclo de autoevolução. Os resultados aparecem aqui.</Note></div>
+        )}
         <p className="mt-2 text-xs text-muted">Sandbox: isolamento <b>{st.sandbox.isolation}</b>
           {st.sandbox.capabilities.unshare_net ? " (rede bloqueada por namespace)" : " — sem isolamento de rede neste servidor"}.</p>
         {(selftest?.checks || st.safety_selftest.details?.checks) && (

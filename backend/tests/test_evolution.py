@@ -243,3 +243,30 @@ async def test_approved_but_unpublished_is_retried(app_env, client, headers):
     assert out and out[0]["status"] == "published"
     r = await client.post(f"/api/evolution/proposals/{p.id}/publish", headers=headers)
     assert r.status_code == 400 and "já publicada" in r.text
+
+
+async def test_github_runner_mode_skips_local_cycles_and_runner_executes_cycle(app_env, monkeypatch):
+    """Modo 'github': o servidor não roda ciclos; o executor (GitHub Actions) roda e grava no mesmo banco."""
+    from ultron.config import reset_settings_cache
+    from ultron.evolution.runner import run_cycle_once
+    from ultron.evolution.scheduler import Scheduler
+    from ultron.models import EvolutionCycle
+
+    monkeypatch.setenv("ULTRON_EVOLUTION_RUNNER", "github")
+    reset_settings_cache()
+    sched = Scheduler()
+    started = await sched.tick()
+    assert not any(s.startswith("evolution_cycle") for s in started)
+    import pytest
+
+    with pytest.raises(RuntimeError, match="GitHub"):
+        await sched.run_now()  # sem token: explica o que falta
+    for t in list(sched._jobs.values()):
+        await t
+    res = await run_cycle_once()
+    assert res["status"] == "completed", res
+    async with session_scope() as s:
+        c = (await s.execute(select(EvolutionCycle))).scalars().one()
+    assert c.trigger == "github-actions" and c.status == "completed"
+    monkeypatch.delenv("ULTRON_EVOLUTION_RUNNER")
+    reset_settings_cache()

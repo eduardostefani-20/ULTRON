@@ -1,10 +1,8 @@
-name: Implantar no Hugging Face
+name: Implantar no Hugging Face (requer HF PRO)
 
+# Desde 2026 o Hugging Face exige assinatura PRO para Spaces Docker. Execução apenas manual.
 on:
   workflow_dispatch:
-  push:
-  schedule:
-    - cron: "23 */6 * * *"   # mantém o Space acordado (ele dorme após 48 h sem acessos)
 
 permissions:
   contents: read
@@ -17,7 +15,7 @@ jobs:
   deploy:
     name: Implantar
     # só o branch principal do ULTRON é implantado (variável ULTRON_GIT_BASE_BRANCH ou o branch atual)
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == (vars.ULTRON_GIT_BASE_BRANCH || 'ccr-39385a67-fi2gyu'))
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,17 +32,3 @@ jobs:
           ULTRON_GITHUB_REPO: ${{ github.repository }}
           ULTRON_GIT_BASE_BRANCH: ${{ github.ref_name }}
         run: python deploy/huggingface/deploy.py deploy
-
-  keep-awake:
-    name: Manter acordado
-    if: github.event_name == 'schedule'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - run: pip install -q huggingface_hub
-      - env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python deploy/huggingface/deploy.py ping

@@ -58,6 +58,11 @@ class GitHub:
         return await self._req("PUT", f"/repos/{self.slug}/pulls/{number}/merge",
                                json={"merge_method": "merge", "commit_title": title[:250], "sha": sha})
 
+    async def dispatch_workflow(self, workflow_file: str, ref: str, inputs: dict | None = None) -> None:
+        """Dispara um workflow (ex.: ciclo de autoevolução no GitHub Actions)."""
+        await self._req("POST", f"/repos/{self.slug}/actions/workflows/{workflow_file}/dispatches",
+                        json={"ref": ref, "inputs": inputs or {}})
+
     async def checks(self, ref: str) -> dict:
         """Resume o estado de CI (check runs) de um commit: success | pending | failure | none."""
         data = await self._req("GET", f"/repos/{self.slug}/commits/{ref}/check-runs")

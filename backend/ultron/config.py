@@ -75,6 +75,9 @@ class Settings(BaseSettings):
     # Execução em segundo plano
     enable_background: bool = Field(default=True, alias="ULTRON_ENABLE_BACKGROUND")
     scheduler_tick_seconds: int = Field(default=30, alias="ULTRON_SCHEDULER_TICK_SECONDS")
+    # internal: ciclos de autoevolução rodam neste servidor · github: rodam no GitHub Actions
+    # (ideal para hospedagens gratuitas fracas; o servidor só atende interface, chat e missões)
+    evolution_runner: str = Field(default="internal", alias="ULTRON_EVOLUTION_RUNNER")
 
     # Sandbox
     sandbox_backend: str = Field(default="auto", alias="ULTRON_SANDBOX_BACKEND")  # auto|process|docker

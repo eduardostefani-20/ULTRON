@@ -1,19 +1,21 @@
-# Blueprint do Render: no celular, abra dashboard.render.com → New → Blueprint → escolha este repositório.
-# Custo: plano Starter (sempre ligado, necessário para o scheduler contínuo) + 1 GB de disco persistente.
+# Blueprint do Render — PLANO GRÁTIS (sem cartão), com banco no Supabase.
+# No celular: dashboard.render.com → New → Blueprint → escolha este repositório.
+# O trabalho pesado da autoevolução roda no GitHub Actions (workflow "Ciclo de autoevolução").
+# Para o plano pago (sempre ligado e mais rápido): no painel do serviço, Settings → Instance Type → Starter.
 services:
   - type: web
     name: ultron
     runtime: docker
-    plan: starter
+    plan: free
     region: virginia
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
     autoDeploy: true
-    disk:
-      name: ultron-data
-      mountPath: /data
-      sizeGB: 1
     envVars:
+      - key: DATABASE_URL
+        sync: false          # cole o endereço "Session pooler" do Supabase
+      - key: GITHUB_TOKEN
+        sync: false          # cole o token github_pat_...
       - key: ULTRON_SECRET_KEY
         generateValue: true
       - key: ULTRON_SETUP_TOKEN
@@ -21,13 +23,10 @@ services:
       - key: ULTRON_GITHUB_REPO
         value: eduardostefani-20/ULTRON
       - key: ULTRON_GIT_BASE_BRANCH
-        sync: false
-      - key: GITHUB_TOKEN
-        sync: false
+        value: ccr-39385a67-fi2gyu
+      - key: ULTRON_EVOLUTION_RUNNER
+        value: github
       - key: ULTRON_MONTHLY_BUDGET_BRL
         value: "100"
       - key: ULTRON_USD_BRL_RATE
         value: "5.50"
-      # Opcional: PostgreSQL gratuito do Supabase (deixe vazio para usar SQLite no disco persistente)
-      - key: DATABASE_URL
-        sync: false

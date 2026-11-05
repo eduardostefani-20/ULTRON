@@ -1,0 +1,70 @@
+name: Ciclo de autoevolução
+
+# Roda os ciclos de autoevolução numa máquina isolada do GitHub (2 núcleos), usando o mesmo banco
+# do servidor (Supabase). Ideal quando o servidor está numa hospedagem gratuita fraca.
+on:
+  schedule:
+    - cron: "41 */8 * * *"
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "cycle (ciclo completo) ou selftest (autoteste de segurança)"
+        type: choice
+        options: [cycle, selftest]
+        default: cycle
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ultron-evolution
+  cancel-in-progress: false
+
+jobs:
+  ciclo:
+    name: Autoevolução
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      HAS_DB: ${{ secrets.ULTRON_DATABASE_URL != '' }}
+    steps:
+      - name: Configuração
+        run: |
+          if [ "$HAS_DB" != "true" ]; then
+            echo "::notice::ULTRON_DATABASE_URL não configurado — ciclo ignorado"
+          fi
+      - uses: actions/checkout@v4
+        if: env.HAS_DB == 'true'
+      - uses: actions/setup-python@v5
+        if: env.HAS_DB == 'true'
+        with:
+          python-version: "3.13"
+      - name: Dependências
+        if: env.HAS_DB == 'true'
+        run: |
+          pip install -q -r backend/requirements.txt
+          pip install -q --no-deps -e backend
+      - name: Sandbox com rede isolada (namespaces de usuário)
+        if: env.HAS_DB == 'true'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+      - name: Rodar
+        if: env.HAS_DB == 'true'
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.ULTRON_DATABASE_URL }}
+          ULTRON_SECRET_KEY: ${{ secrets.ULTRON_SECRET_KEY }}
+          GITHUB_TOKEN: ${{ secrets.ULTRON_GH_TOKEN || github.token }}
+          ULTRON_GITHUB_REPO: ${{ github.repository }}
+          ULTRON_GIT_BASE_BRANCH: ${{ github.ref_name }}
+          ULTRON_DATA_DIR: /tmp/ultron-actions
+          ULTRON_ENABLE_BACKGROUND: "false"
+        run: |
+          if [ -n "$ULTRON_SECRET_KEY" ]; then
+            export ULTRON_ENV=production
+          else
+            export ULTRON_ENV=development
+            echo "::warning::Sem o segredo ULTRON_SECRET_KEY o ciclo não lê as chaves de IA do app (só etapas sem IA)."
+          fi
+          # como root, o sandbox roda o código experimental como 'nobody' e sem rede
+          sudo -E env "PATH=$PATH" python -m ultron.evolution.runner "${{ inputs.modo || 'cycle' }}"
